@@ -1,6 +1,6 @@
-package com.sagar.repository;
+package com.pos.repository;
 
-import com.sagar.model.User;
+import com.pos.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository <User, Long> {

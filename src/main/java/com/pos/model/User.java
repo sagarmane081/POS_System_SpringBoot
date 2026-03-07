@@ -1,6 +1,6 @@
-package com.sagar.model;
+package com.pos.model;
 
-import com.sagar.domain.UserRole;
+import com.pos.domain.UserRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

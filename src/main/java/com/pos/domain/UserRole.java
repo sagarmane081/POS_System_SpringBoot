@@ -1,4 +1,4 @@
-package com.sagar.domain;
+package com.pos.domain;
 
 public enum UserRole {
 

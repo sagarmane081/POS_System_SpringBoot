@@ -1,4 +1,4 @@
-package com.sagar.configuration;
+package com.pos.configuration;
 
 public class JwtConstant {
 
