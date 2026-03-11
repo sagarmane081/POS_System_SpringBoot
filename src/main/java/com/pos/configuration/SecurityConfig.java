@@ -28,6 +28,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/super-admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
@@ -36,7 +37,7 @@ public class SecurityConfig {
 
                 .addFilterBefore(new JwtValidator(), BasicAuthenticationFilter.class)
 
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+                .csrf(csrf -> csrf.disable())   // 🔴 important fix
 
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 

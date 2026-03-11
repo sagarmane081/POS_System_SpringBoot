@@ -21,23 +21,32 @@ import java.util.List;
 public class JwtValidator extends OncePerRequestFilter {
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String path = request.getServletPath();
+
+        if (path.startsWith("/auth")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String jwt = request.getHeader(JwtConstant.JWT_HEADER);
 
         if (jwt != null) {
+
             jwt = jwt.substring(7);
 
             try {
+
                 SecretKey key = Keys.hmacShaKeyFor(JwtConstant.JWT_SECRET.getBytes());
 
                 Claims claims = Jwts.parser()
                         .verifyWith(key)
                         .build()
-                        .parseSignedClaims(jwt)
+                        .parseClaimsJws(jwt)
                         .getPayload();
 
                 String email = String.valueOf(claims.get("email"));
@@ -52,7 +61,7 @@ public class JwtValidator extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
             } catch (Exception e) {
-                throw new BadCredentialsException("Invalid JWT token");
+                throw new BadCredentialsException("Invalid JWT token..");
             }
         }
 
