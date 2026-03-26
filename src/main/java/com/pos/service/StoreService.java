@@ -14,4 +14,5 @@ public interface StoreService {
     Store getStoreByAdmin();
     StoreDto updateStore(Long id, StoreDto storeDto);
     StoreDto deleteStore(Long id);
+    StoreDto getStoreByEmployee();
 }
