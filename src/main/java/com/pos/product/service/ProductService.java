@@ -4,6 +4,8 @@ import com.pos.product.dto.ProductRequest;
 import com.pos.product.dto.ProductResponse;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface ProductService {
 
     Page<ProductResponse> getAllProducts(
@@ -26,5 +28,21 @@ public interface ProductService {
 
     void deleteProduct(
             Long id
+    );
+
+    List<ProductResponse> searchProducts(String keyword);
+
+    List<ProductResponse> getProductsByCategory(Long categoryId);
+
+    List<ProductResponse> getLowStockProducts();
+
+    ProductResponse increaseStock(
+            Long productId,
+            Integer quantity
+    );
+
+    ProductResponse decreaseStock(
+            Long productId,
+            Integer quantity
     );
 }

@@ -1,28 +1,43 @@
 package com.pos.product.dto;
 
 import jakarta.validation.constraints.*;
+
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Data
-@Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class ProductRequest {
 
-    @NotBlank(message = "Product name is required")
+    @NotBlank
     private String name;
+
+    @NotBlank
+    private String sku;
 
     private String description;
 
-    @NotNull(message = "Price is required")
-    @Positive(message = "Price must be positive")
-    private BigDecimal price;
+    @NotNull
+    @Positive
+    private BigDecimal mrp;
 
-    @NotNull(message = "Stock is required")
-    @PositiveOrZero(message = "Stock cannot be negative")
+    @NotNull
+    @Positive
+    private BigDecimal sellingPrice;
+
+    @NotNull
+    @PositiveOrZero
     private Integer stock;
+
+    private String brand;
+
+    private String color;
+
+    private String image;
+
+    @NotNull
+    private Long categoryId;
 }

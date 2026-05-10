@@ -1,6 +1,7 @@
 package com.pos.product.controller;
 
 import com.pos.common.response.ApiResponse;
+import com.pos.inventory.dto.StockUpdateRequest;
 import com.pos.product.dto.ProductRequest;
 import com.pos.product.dto.ProductResponse;
 import com.pos.product.service.ProductService;
@@ -88,8 +89,9 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductResponse>>
-    updateProduct(
+    public ResponseEntity<
+            ApiResponse<?>
+            > updateProduct(
 
             @PathVariable Long id,
 
@@ -98,41 +100,109 @@ public class ProductController {
             ProductRequest request
     ) {
 
-        ProductResponse response =
-                productService.updateProduct(
-                        id,
-                        request
-                );
-
         return ResponseEntity.ok(
-                ApiResponse.<ProductResponse>builder()
-                        .success(true)
-                        .message(
-                                "Product updated successfully"
+                new ApiResponse<>(
+                        true,
+                        "Product updated successfully",
+                        productService.updateProduct(
+                                id,
+                                request
                         )
-                        .data(response)
-                        .build()
+                )
         );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<String>>
-    deleteProduct(
+    public ResponseEntity<
+            ApiResponse<?>
+            > deleteProduct(
             @PathVariable Long id
     ) {
 
         productService.deleteProduct(id);
 
         return ResponseEntity.ok(
-                ApiResponse.<String>builder()
-                        .success(true)
-                        .message(
-                                "Product deleted successfully"
-                        )
-                        .data(null)
-                        .build()
+                new ApiResponse<>(
+                        true,
+                        "Product deleted successfully",
+                        null
+                )
         );
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>> searchProducts(
+            @RequestParam String keyword
+    ) {
 
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Products fetched successfully",
+                        productService.searchProducts(keyword)
+                )
+        );
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<ApiResponse<?>> getProductsByCategory(
+            @PathVariable Long categoryId
+    ) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Products fetched successfully",
+                        productService.getProductsByCategory(categoryId)
+                )
+        );
+    }
+
+    @GetMapping("/low-stock")
+    public ResponseEntity<ApiResponse<?>> getLowStockProducts() {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Low stock products fetched successfully",
+                        productService.getLowStockProducts()
+                )
+        );
+    }
+
+    @PatchMapping("/{id}/increase-stock")
+    public ResponseEntity<ApiResponse<?>> increaseStock(
+            @PathVariable Long id,
+            @Valid @RequestBody StockUpdateRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Stock increased successfully",
+                        productService.increaseStock(
+                                id,
+                                request.getQuantity()
+                        )
+                )
+        );
+    }
+
+    @PatchMapping("/{id}/decrease-stock")
+    public ResponseEntity<ApiResponse<?>> decreaseStock(
+            @PathVariable Long id,
+            @Valid @RequestBody StockUpdateRequest request
+    ) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Stock decreased successfully",
+                        productService.decreaseStock(
+                                id,
+                                request.getQuantity()
+                        )
+                )
+        );
+    }
 }

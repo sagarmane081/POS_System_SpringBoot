@@ -8,12 +8,17 @@ import com.pos.product.mapper.ProductMapper;
 import com.pos.product.repository.ProductRepository;
 import com.pos.product.service.ProductService;
 
+import com.pos.category.entity.Category;
+import com.pos.category.repository.CategoryRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,8 @@ public class ProductServiceImpl
         implements ProductService {
 
     private final ProductRepository productRepository;
+
+    private final CategoryRepository categoryRepository;
 
     private final ProductMapper productMapper;
 
@@ -65,6 +72,17 @@ public class ProductServiceImpl
         Product product =
                 productMapper.toEntity(request);
 
+        Category category =
+                categoryRepository.findById(
+                        request.getCategoryId()
+                ).orElseThrow(() ->
+                        new RuntimeException(
+                                "Category not found"
+                        )
+                );
+
+        product.setCategory(category);
+
         product.setStatus(ProductStatus.ACTIVE);
 
         Product savedProduct =
@@ -94,26 +112,71 @@ public class ProductServiceImpl
                                 )
                         );
 
-        product.setName(request.getName());
+        Category category =
+                categoryRepository
+                        .findById(
+                                request.getCategoryId()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Category not found"
+                                )
+                        );
+
+        product.setName(
+                request.getName()
+        );
+
+        product.setSku(
+                request.getSku()
+        );
+
         product.setDescription(
                 request.getDescription()
         );
-        product.setPrice(request.getPrice());
-        product.setStock(request.getStock());
+
+        product.setMrp(
+                request.getMrp()
+        );
+
+        product.setSellingPrice(
+                request.getSellingPrice()
+        );
+
+        product.setStock(
+                request.getStock()
+        );
+
+        product.setBrand(
+                request.getBrand()
+        );
+
+        product.setColor(
+                request.getColor()
+        );
+
+        product.setImage(
+                request.getImage()
+        );
+
+        product.setCategory(category);
 
         Product updatedProduct =
-                productRepository.save(product);
+                productRepository
+                        .save(product);
 
-        return productMapper.toResponse(
-                updatedProduct
+        log.info(
+                "Product updated successfully: {}",
+                updatedProduct.getId()
         );
+
+        return productMapper
+                .toResponse(updatedProduct);
     }
 
     @Override
     @Transactional
-    public void deleteProduct(
-            Long id
-    ) {
+    public void deleteProduct(Long id) {
 
         Product product =
                 productRepository
@@ -125,5 +188,90 @@ public class ProductServiceImpl
                         );
 
         productRepository.delete(product);
+
+        log.info(
+                "Product deleted successfully: {}",
+                product.getId()
+        );
+    }
+
+    @Override
+    public List<ProductResponse> searchProducts(String keyword) {
+
+        return productRepository
+                .findByNameContainingIgnoreCase(keyword)
+                .stream()
+                .map(productMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ProductResponse> getProductsByCategory(Long categoryId) {
+
+        return productRepository
+                .findByCategoryId(categoryId)
+                .stream()
+                .map(productMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public List<ProductResponse> getLowStockProducts() {
+
+        return productRepository
+                .findByStockLessThan(10)
+                .stream()
+                .map(productMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public ProductResponse increaseStock(
+            Long productId,
+            Integer quantity
+    ) {
+
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() ->
+                        new RuntimeException("Product not found")
+                );
+
+        product.setStock(
+                product.getStock() + quantity
+        );
+
+        Product updatedProduct =
+                productRepository.save(product);
+
+        return productMapper.toResponse(updatedProduct);
+    }
+
+    @Override
+    public ProductResponse decreaseStock(
+            Long productId,
+            Integer quantity
+    ) {
+
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() ->
+                        new RuntimeException("Product not found")
+                );
+
+        if (product.getStock() < quantity) {
+            throw new RuntimeException(
+                    "Insufficient stock"
+            );
+        }
+
+        product.setStock(
+                product.getStock() - quantity
+        );
+
+        Product updatedProduct =
+                productRepository.save(product);
+
+        return productMapper.toResponse(updatedProduct);
     }
 }

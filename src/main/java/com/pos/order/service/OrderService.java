@@ -27,6 +27,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final OrderMapper orderMapper;
 
     @Transactional
     public OrderResponse createOrder(
@@ -70,7 +71,7 @@ public class OrderService {
                     OrderItem.builder()
                             .product(product)
                             .quantity(itemRequest.getQuantity())
-                            .price(product.getPrice())
+                            .price(product.getSellingPrice())
                             .order(order)
                             .build();
 
@@ -78,7 +79,7 @@ public class OrderService {
 
             totalAmount =
                     totalAmount.add(
-                            product.getPrice().multiply(
+                            product.getSellingPrice().multiply(
                                     BigDecimal.valueOf(
                                             itemRequest.getQuantity()
                                     )
@@ -99,6 +100,25 @@ public class OrderService {
                 savedOrder.getId()
         );
 
-        return OrderMapper.toResponse(savedOrder);
+        return orderMapper.toResponse(savedOrder);
+    }
+
+    public List<OrderResponse> getAllOrders() {
+
+        return orderRepository.findAll()
+                .stream()
+                .map(orderMapper::toResponse)
+                .toList();
+    }
+
+    public OrderResponse getOrderById(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Order not found"
+                        )
+                );
+        return orderMapper.toResponse(order);
     }
 }

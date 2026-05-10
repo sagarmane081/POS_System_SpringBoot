@@ -3,7 +3,7 @@ spring:
     name: Sagar POS System
 
   datasource:
-    url: jdbc:h2:mem:posdb
+    url: jdbc:h2:file:./data/posdb
     driver-class-name: org.h2.Driver
     username: sa
     password:

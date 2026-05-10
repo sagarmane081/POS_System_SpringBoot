@@ -33,4 +33,30 @@ public class OrderController {
                 )
         );
     }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<?>> getAllOrders() {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Orders fetched successfully",
+                        orderService.getAllOrders()
+                )
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<?>> getOrderById(
+            @PathVariable Long id
+    ) {
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Order fetched successfully",
+                        orderService.getOrderById(id)
+                )
+        );
+    }
 }

@@ -2,11 +2,14 @@ package com.pos.order.mapper;
 
 import com.pos.order.dto.*;
 import com.pos.order.entity.Order;
+import org.springframework.stereotype.Component;
+
 import java.util.stream.Collectors;
 
+@Component
 public class OrderMapper {
 
-    public static OrderResponse toResponse(Order order) {
+    public OrderResponse toResponse(Order order) {
 
         return OrderResponse.builder()
                 .id(order.getId())
