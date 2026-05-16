@@ -7,6 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.pos.payment.entity.Payment;
 
 @Entity
 @Table(name = "orders")
@@ -34,4 +35,10 @@ public class Order {
             orphanRemoval = true
     )
     private List<OrderItem> items;
+
+    @OneToOne(
+            mappedBy = "order",
+            cascade = CascadeType.ALL
+    )
+    private Payment payment;
 }

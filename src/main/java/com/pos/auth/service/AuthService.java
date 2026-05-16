@@ -7,8 +7,10 @@ import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
 import com.pos.auth.security.JwtProvider;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,29 +26,45 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(
+            RegisterRequest request
+    ) {
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+        if (userRepository.existsByEmail(
+                request.getEmail()
+        )) {
+
+            throw new RuntimeException(
+                    "Email already exists"
+            );
         }
 
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .password(
+                        passwordEncoder.encode(
+                                request.getPassword()
+                        )
+                )
                 .role(Role.ROLE_USER)
                 .build();
 
         userRepository.save(user);
 
-        String token = jwtProvider.generateToken(user.getEmail());
+        String token =
+                jwtProvider.generateToken(
+                        user.getEmail()
+                );
 
-        log.info("New user registered: {}", user.getEmail());
+        String refreshToken =
+                jwtProvider.generateRefreshToken(
+                        user.getEmail()
+                );
 
         return new AuthResponse(
                 token,
-                user.getEmail(),
-                user.getRole()
+                refreshToken
         );
     }
 
@@ -55,29 +73,40 @@ public class AuthService {
     ) {
 
         authenticationManager.authenticate(
+
                 new UsernamePasswordAuthenticationToken(
+
                         request.getEmail(),
+
                         request.getPassword()
                 )
         );
 
-        User user = userRepository
-                .findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found"
+        User user =
+                userRepository
+                        .findByEmail(
+                                request.getEmail()
                         )
-                );
+                        .orElseThrow(() ->
+
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
         String token =
                 jwtProvider.generateToken(
                         user.getEmail()
                 );
 
+        String refreshToken =
+                jwtProvider.generateRefreshToken(
+                        user.getEmail()
+                );
+
         return new AuthResponse(
                 token,
-                user.getEmail(),
-                user.getRole()
+                refreshToken
         );
     }
 }

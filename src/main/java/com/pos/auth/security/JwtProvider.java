@@ -3,6 +3,7 @@ package com.pos.auth.security;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,54 +19,123 @@ public class JwtProvider {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(String email) {
 
-        Key key = Keys.hmacShaKeyFor(
+    private Key getSignKey() {
+
+        return Keys.hmacShaKeyFor(
                 jwtSecret.getBytes()
         );
+    }
+
+
+    public String generateToken(
+            String email
+    ) {
 
         return Jwts.builder()
+
                 .setSubject(email)
-                .setIssuedAt(new Date())
+
+                .setIssuedAt(
+                        new Date()
+                )
+
                 .setExpiration(
+
                         new Date(
                                 System.currentTimeMillis()
                                         + jwtExpiration
                         )
                 )
+
                 .signWith(
-                        key,
+                        getSignKey(),
                         SignatureAlgorithm.HS256
                 )
+
                 .compact();
     }
 
-    public String extractEmail(String token) {
 
-        return Jwts.parser()
-                .setSigningKey(
-                        Keys.hmacShaKeyFor(
-                                jwtSecret.getBytes()
+    public String generateRefreshToken(
+            String email
+    ) {
+
+        return Jwts.builder()
+
+                .setSubject(email)
+
+                .setIssuedAt(
+                        new Date()
+                )
+
+                .setExpiration(
+
+                        new Date(
+
+                                System.currentTimeMillis()
+                                        + 604800000
                         )
                 )
+
+                .signWith(
+                        getSignKey(),
+                        SignatureAlgorithm.HS256
+                )
+
+                .compact();
+    }
+
+
+    public String extractEmail(
+            String token
+    ) {
+
+        return Jwts.parser()
+
+                .setSigningKey(
+                        getSignKey()
+                )
+
                 .build()
-                .parseClaimsJws(token)
+
+                .parseClaimsJws(
+                        token
+                )
+
                 .getBody()
+
                 .getSubject();
     }
 
-    public boolean validateToken(String token) {
+
+    public String extractUsername(
+            String token
+    ) {
+
+        return extractEmail(
+                token
+        );
+    }
+
+
+    public boolean validateToken(
+            String token
+    ) {
 
         try {
 
             Jwts.parser()
+
                     .setSigningKey(
-                            Keys.hmacShaKeyFor(
-                                    jwtSecret.getBytes()
-                            )
+                            getSignKey()
                     )
+
                     .build()
-                    .parseClaimsJws(token);
+
+                    .parseClaimsJws(
+                            token
+                    );
 
             return true;
 

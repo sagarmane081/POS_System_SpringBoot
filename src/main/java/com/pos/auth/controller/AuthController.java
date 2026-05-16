@@ -2,7 +2,9 @@ package com.pos.auth.controller;
 
 import com.pos.auth.dto.AuthResponse;
 import com.pos.auth.dto.LoginRequest;
+import com.pos.auth.dto.RefreshTokenRequest;
 import com.pos.auth.dto.RegisterRequest;
+import com.pos.auth.security.JwtProvider;
 import com.pos.auth.service.AuthService;
 import com.pos.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtProvider jwtProvider;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
@@ -47,6 +50,48 @@ public class AuthController {
                         true,
                         "Login successful",
                         response
+                )
+        );
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<?>>
+    refresh(
+
+            @RequestBody
+            RefreshTokenRequest request
+    ) {
+
+        String email =
+
+                jwtProvider
+                        .extractUsername(
+                                request
+                                        .getRefreshToken()
+                        );
+
+        String token =
+
+                jwtProvider
+                        .generateToken(
+                                email
+                        );
+
+        return ResponseEntity.ok(
+
+                new ApiResponse<>(
+
+                        true,
+
+                        "Token refreshed",
+
+                        new AuthResponse(
+
+                                token,
+
+                                request
+                                        .getRefreshToken()
+                        )
                 )
         );
     }

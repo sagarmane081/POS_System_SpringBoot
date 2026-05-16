@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0.36
+    container_name: pos-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: pos_system
+
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: .
+
+    container_name: pos-backend
+
+    depends_on:
+      - mysql
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://pos-mysql:3306/pos_system
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+
+volumes:
+  mysql_data:

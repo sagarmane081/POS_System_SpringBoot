@@ -130,20 +130,6 @@ public class ProductController {
         );
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<ApiResponse<?>> searchProducts(
-            @RequestParam String keyword
-    ) {
-
-        return ResponseEntity.ok(
-                new ApiResponse<>(
-                        true,
-                        "Products fetched successfully",
-                        productService.searchProducts(keyword)
-                )
-        );
-    }
-
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<ApiResponse<?>> getProductsByCategory(
             @PathVariable Long categoryId
@@ -201,6 +187,49 @@ public class ProductController {
                         productService.decreaseStock(
                                 id,
                                 request.getQuantity()
+                        )
+                )
+        );
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<?>>
+    getProducts(
+
+            @RequestParam(
+                    defaultValue = ""
+            )
+            String keyword,
+
+            @RequestParam(
+                    defaultValue = "0"
+            )
+            int page,
+
+            @RequestParam(
+                    defaultValue = "5"
+            )
+            int size,
+
+            @RequestParam(
+                    defaultValue = "name"
+            )
+            String sortBy
+    ) {
+
+        return ResponseEntity.ok(
+
+                new ApiResponse<>(
+
+                        true,
+
+                        "Products fetched successfully",
+
+                        productService.getProducts(
+                                keyword,
+                                page,
+                                size,
+                                sortBy
                         )
                 )
         );

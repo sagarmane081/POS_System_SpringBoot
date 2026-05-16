@@ -45,4 +45,11 @@ public interface ProductService {
             Long productId,
             Integer quantity
     );
+
+    Page<ProductResponse> getProducts(
+            String keyword,
+            int page,
+            int size,
+            String sortBy
+    );
 }

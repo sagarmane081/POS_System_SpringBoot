@@ -11,6 +11,8 @@ import com.pos.product.service.ProductService;
 import com.pos.category.entity.Category;
 import com.pos.category.repository.CategoryRepository;
 
+import com.pos.common.exception.ResourceNotFoundException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,7 +57,7 @@ public class ProductServiceImpl
                 productRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Product not found"
                                 )
                         );
@@ -76,7 +78,7 @@ public class ProductServiceImpl
                 categoryRepository.findById(
                         request.getCategoryId()
                 ).orElseThrow(() ->
-                        new RuntimeException(
+                        new ResourceNotFoundException(
                                 "Category not found"
                         )
                 );
@@ -107,7 +109,7 @@ public class ProductServiceImpl
                 productRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Product not found"
                                 )
                         );
@@ -118,46 +120,20 @@ public class ProductServiceImpl
                                 request.getCategoryId()
                         )
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Category not found"
                                 )
                         );
 
-        product.setName(
-                request.getName()
-        );
-
-        product.setSku(
-                request.getSku()
-        );
-
-        product.setDescription(
-                request.getDescription()
-        );
-
-        product.setMrp(
-                request.getMrp()
-        );
-
-        product.setSellingPrice(
-                request.getSellingPrice()
-        );
-
-        product.setStock(
-                request.getStock()
-        );
-
-        product.setBrand(
-                request.getBrand()
-        );
-
-        product.setColor(
-                request.getColor()
-        );
-
-        product.setImage(
-                request.getImage()
-        );
+        product.setName(request.getName());
+        product.setSku(request.getSku());
+        product.setDescription(request.getDescription());
+        product.setMrp(request.getMrp());
+        product.setSellingPrice(request.getSellingPrice());
+        product.setStock(request.getStock());
+        product.setBrand(request.getBrand());
+        product.setColor(request.getColor());
+        product.setImage(request.getImage());
 
         product.setCategory(category);
 
@@ -182,7 +158,7 @@ public class ProductServiceImpl
                 productRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Product not found"
                                 )
                         );
@@ -196,7 +172,9 @@ public class ProductServiceImpl
     }
 
     @Override
-    public List<ProductResponse> searchProducts(String keyword) {
+    public List<ProductResponse> searchProducts(
+            String keyword
+    ) {
 
         return productRepository
                 .findByNameContainingIgnoreCase(keyword)
@@ -206,7 +184,9 @@ public class ProductServiceImpl
     }
 
     @Override
-    public List<ProductResponse> getProductsByCategory(Long categoryId) {
+    public List<ProductResponse> getProductsByCategory(
+            Long categoryId
+    ) {
 
         return productRepository
                 .findByCategoryId(categoryId)
@@ -231,11 +211,14 @@ public class ProductServiceImpl
             Integer quantity
     ) {
 
-        Product product = productRepository
-                .findById(productId)
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
+        Product product =
+                productRepository
+                        .findById(productId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Product not found"
+                                )
+                        );
 
         product.setStock(
                 product.getStock() + quantity
@@ -244,7 +227,8 @@ public class ProductServiceImpl
         Product updatedProduct =
                 productRepository.save(product);
 
-        return productMapper.toResponse(updatedProduct);
+        return productMapper
+                .toResponse(updatedProduct);
     }
 
     @Override
@@ -253,13 +237,17 @@ public class ProductServiceImpl
             Integer quantity
     ) {
 
-        Product product = productRepository
-                .findById(productId)
-                .orElseThrow(() ->
-                        new RuntimeException("Product not found")
-                );
+        Product product =
+                productRepository
+                        .findById(productId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Product not found"
+                                )
+                        );
 
         if (product.getStock() < quantity) {
+
             throw new RuntimeException(
                     "Insufficient stock"
             );
@@ -272,6 +260,46 @@ public class ProductServiceImpl
         Product updatedProduct =
                 productRepository.save(product);
 
-        return productMapper.toResponse(updatedProduct);
+        return productMapper
+                .toResponse(updatedProduct);
+    }
+
+    @Override
+    public Page<ProductResponse> getProducts(
+            String keyword,
+            int page,
+            int size,
+            String sortBy
+    ) {
+
+        Pageable pageable =
+                PageRequest.of(
+                        page,
+                        size,
+                        Sort.by(sortBy)
+                );
+
+        Page<Product> products;
+
+        if (keyword == null ||
+                keyword.isBlank()) {
+
+            products =
+                    productRepository
+                            .findAll(pageable);
+
+        } else {
+
+            products =
+                    productRepository
+                            .findByNameContainingIgnoreCase(
+                                    keyword,
+                                    pageable
+                            );
+        }
+
+        return products.map(
+                productMapper::toResponse
+        );
     }
 }

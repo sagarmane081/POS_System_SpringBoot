@@ -1,14 +1,13 @@
 package com.pos.auth.dto;
 
-import com.pos.auth.enums.Role;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
 
-@Getter
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class AuthResponse {
 
     private String token;
-    private String email;
-    private Role role;
+
+    private String refreshToken;
 }

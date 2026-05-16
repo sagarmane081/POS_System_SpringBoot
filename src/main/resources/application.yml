@@ -3,22 +3,17 @@ spring:
     name: Sagar POS System
 
   datasource:
-    url: jdbc:h2:file:./data/posdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: true
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://pos-mysql:3306/pos_system}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+
+  flyway:
+    enabled: false
 
 server:
   port: 5000
