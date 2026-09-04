@@ -1,8 +1,10 @@
 package com.pos.auth.service;
 
 import com.pos.auth.dto.AuthResponse;
+import com.pos.auth.dto.CreateUserRequest;
 import com.pos.auth.dto.LoginRequest;
 import com.pos.auth.dto.RegisterRequest;
+import com.pos.auth.dto.UserResponse;
 import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
@@ -110,5 +112,45 @@ public class AuthService {
                 token,
                 refreshToken
         );
+    }
+
+    public UserResponse createUser(
+            CreateUserRequest request
+    ) {
+
+        if (userRepository.existsByEmail(
+                request.getEmail()
+        )) {
+
+            throw new DuplicateResourceException(
+                    "Email already exists"
+            );
+        }
+
+        User user = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(
+                        passwordEncoder.encode(
+                                request.getPassword()
+                        )
+                )
+                .role(request.getRole())
+                .build();
+
+        User savedUser = userRepository.save(user);
+
+        log.info(
+                "User created by admin: {} ({})",
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
+
+        return UserResponse.builder()
+                .id(savedUser.getId())
+                .name(savedUser.getName())
+                .email(savedUser.getEmail())
+                .role(savedUser.getRole())
+                .build();
     }
 }

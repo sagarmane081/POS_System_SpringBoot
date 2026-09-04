@@ -1,8 +1,10 @@
 package com.pos.auth.service;
 
 import com.pos.auth.dto.AuthResponse;
+import com.pos.auth.dto.CreateUserRequest;
 import com.pos.auth.dto.LoginRequest;
 import com.pos.auth.dto.RegisterRequest;
+import com.pos.auth.dto.UserResponse;
 import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
@@ -149,5 +151,52 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("User not found");
+    }
+
+    @Test
+    void createUser_shouldThrowDuplicateResourceException_whenEmailAlreadyExists() {
+
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName("Cashier One");
+        request.setEmail("cashier@example.com");
+        request.setPassword("password123");
+        request.setRole(Role.ROLE_CASHIER);
+
+        when(userRepository.existsByEmail("cashier@example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.createUser(request))
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessage("Email already exists");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void createUser_shouldSaveWithRequestedRoleAndReturnUserResponse() {
+
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName("Cashier One");
+        request.setEmail("cashier@example.com");
+        request.setPassword("password123");
+        request.setRole(Role.ROLE_CASHIER);
+
+        when(userRepository.existsByEmail("cashier@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(5L);
+            return user;
+        });
+
+        UserResponse response = authService.createUser(request);
+
+        assertThat(response.getId()).isEqualTo(5L);
+        assertThat(response.getName()).isEqualTo("Cashier One");
+        assertThat(response.getEmail()).isEqualTo("cashier@example.com");
+        assertThat(response.getRole()).isEqualTo(Role.ROLE_CASHIER);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getPassword()).isEqualTo("encoded-password");
     }
 }

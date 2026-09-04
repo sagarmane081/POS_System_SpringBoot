@@ -31,6 +31,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://pos-mysql:3306/pos_system
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: admin
+      ADMIN_EMAIL: admin@possystem.com
+      ADMIN_PASSWORD: admin123
 
 volumes:
   mysql_data:

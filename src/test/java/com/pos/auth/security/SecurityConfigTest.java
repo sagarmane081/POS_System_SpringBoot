@@ -22,6 +22,9 @@ import com.pos.product.service.ProductSeedService;
 import com.pos.product.service.ProductService;
 import com.pos.analytics.controller.AnalyticsController;
 import com.pos.auth.controller.AuthController;
+import com.pos.auth.controller.UserController;
+import com.pos.auth.dto.CreateUserRequest;
+import com.pos.auth.enums.Role;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {
         AuthController.class,
+        UserController.class,
         CategoryController.class,
         OrderController.class,
         PaymentController.class,
@@ -121,6 +125,17 @@ class SecurityConfigTest {
         return objectMapper.writeValueAsString(
                 CategoryRequest.builder().name("Beverages").build()
         );
+    }
+
+    private String createUserJson() throws Exception {
+
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName("Cashier One");
+        request.setEmail("cashier@example.com");
+        request.setPassword("password123");
+        request.setRole(Role.ROLE_CASHIER);
+
+        return objectMapper.writeValueAsString(request);
     }
 
     @Test
@@ -321,6 +336,35 @@ class SecurityConfigTest {
     void getDashboard_shouldBeForbidden_forCashier() throws Exception {
 
         mockMvc.perform(get("/api/analytics/dashboard"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createUser_shouldBeForbidden_whenUnauthenticated() throws Exception {
+
+        mockMvc.perform(post("/api/users")
+                        .contentType("application/json")
+                        .content(createUserJson()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void createUser_shouldBeAllowed_forAdmin() throws Exception {
+
+        mockMvc.perform(post("/api/users")
+                        .contentType("application/json")
+                        .content(createUserJson()))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "CASHIER")
+    void createUser_shouldBeForbidden_forCashier() throws Exception {
+
+        mockMvc.perform(post("/api/users")
+                        .contentType("application/json")
+                        .content(createUserJson()))
                 .andExpect(status().isForbidden());
     }
 }

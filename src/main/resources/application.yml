@@ -22,3 +22,10 @@ server:
 jwt:
   secret: ${JWT_SECRET:your-super-secret-key-your-super-secret-key}
   expiration: ${JWT_EXPIRATION:86400000}
+
+# Set ADMIN_EMAIL/ADMIN_PASSWORD to bootstrap the first admin account on startup.
+# No-op if either is unset, or if an admin already exists.
+admin:
+  bootstrap:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}

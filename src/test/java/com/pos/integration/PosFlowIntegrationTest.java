@@ -3,6 +3,7 @@ package com.pos.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
+import com.pos.auth.dto.CreateUserRequest;
 import com.pos.auth.dto.LoginRequest;
 import com.pos.auth.dto.RegisterRequest;
 import com.pos.auth.entity.User;
@@ -300,5 +301,84 @@ class PosFlowIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stock").value(2));
+    }
+
+    @Test
+    void adminCreatesCashier_shouldLoginAndAccessCashierEndpoints_butNotAdminOnlyEndpoints() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("admin3-" + uniqueSuffix + "@example.com", "adminPass123");
+
+        String cashierEmail = "cashier-" + uniqueSuffix + "@example.com";
+
+        CreateUserRequest createUserRequest = new CreateUserRequest();
+        createUserRequest.setName("New Cashier");
+        createUserRequest.setEmail(cashierEmail);
+        createUserRequest.setPassword("cashierPass123");
+        createUserRequest.setRole(Role.ROLE_CASHIER);
+
+        mockMvc.perform(post("/api/users")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(createUserRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.email").value(cashierEmail))
+                .andExpect(jsonPath("$.data.role").value("ROLE_CASHIER"));
+
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail(cashierEmail);
+        loginRequest.setPassword("cashierPass123");
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String cashierToken = JsonPath.read(loginResult.getResponse().getContentAsString(), "$.data.token");
+
+        mockMvc.perform(get("/api/products").header("Authorization", "Bearer " + cashierToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/analytics/dashboard").header("Authorization", "Bearer " + cashierToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/users")
+                        .header("Authorization", "Bearer " + cashierToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(createUserRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createUser_shouldReturn409EndToEnd_whenEmailAlreadyRegistered() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("admin4-" + uniqueSuffix + "@example.com", "adminPass123");
+
+        String existingEmail = "existing-" + uniqueSuffix + "@example.com";
+
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setName("Existing User");
+        registerRequest.setEmail(existingEmail);
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk());
+
+        CreateUserRequest createUserRequest = new CreateUserRequest();
+        createUserRequest.setName("Duplicate");
+        createUserRequest.setEmail(existingEmail);
+        createUserRequest.setPassword("password123");
+        createUserRequest.setRole(Role.ROLE_CASHIER);
+
+        mockMvc.perform(post("/api/users")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(createUserRequest)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email already exists"));
     }
 }

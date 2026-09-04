@@ -19,11 +19,16 @@ class UserRepositoryTest {
 
     private User user(String email) {
 
+        return user(email, Role.ROLE_USER);
+    }
+
+    private User user(String email, Role role) {
+
         return User.builder()
                 .name("John Doe")
                 .email(email)
                 .password("encoded-password")
-                .role(Role.ROLE_USER)
+                .role(role)
                 .build();
     }
 
@@ -57,5 +62,21 @@ class UserRepositoryTest {
     void findByEmail_shouldReturnEmpty_whenMissing() {
 
         assertThat(userRepository.findByEmail("ghost@example.com")).isEmpty();
+    }
+
+    @Test
+    void existsByRole_shouldReturnTrue_whenAdminExists() {
+
+        userRepository.save(user("admin@example.com", Role.ROLE_ADMIN));
+
+        assertThat(userRepository.existsByRole(Role.ROLE_ADMIN)).isTrue();
+    }
+
+    @Test
+    void existsByRole_shouldReturnFalse_whenNoUserHasThatRole() {
+
+        userRepository.save(user("john@example.com", Role.ROLE_USER));
+
+        assertThat(userRepository.existsByRole(Role.ROLE_ADMIN)).isFalse();
     }
 }
