@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final RateLimitingFilter rateLimitingFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -87,6 +88,11 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+
+                .addFilterBefore(
+                        rateLimitingFilter,
+                        JwtFilter.class
                 );
 
         return http.build();

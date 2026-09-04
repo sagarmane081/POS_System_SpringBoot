@@ -15,3 +15,11 @@ spring:
 jwt:
   secret: integration-test-secret-key-integration-test-secret-key
   expiration: 3600000
+
+# High limit so full-context tests hitting /api/auth/** repeatedly aren't
+# rate-limited; RateLimitingFilterTest exercises the real limiting logic
+# directly, and RateLimitingIntegrationTest overrides this to a tight value.
+rate-limit:
+  auth:
+    max-requests: 100000
+    window-seconds: 60

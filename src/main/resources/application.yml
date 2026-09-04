@@ -29,3 +29,9 @@ admin:
   bootstrap:
     email: ${ADMIN_EMAIL:}
     password: ${ADMIN_PASSWORD:}
+
+# Per-client-IP request cap on /api/auth/login and /api/auth/register.
+rate-limit:
+  auth:
+    max-requests: ${RATE_LIMIT_AUTH_MAX_REQUESTS:5}
+    window-seconds: ${RATE_LIMIT_AUTH_WINDOW_SECONDS:60}
