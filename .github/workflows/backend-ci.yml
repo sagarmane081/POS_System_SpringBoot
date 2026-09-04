@@ -25,5 +25,13 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Build project
-        run: mvn clean package -DskipTests
+      - name: Build, test and verify coverage
+        run: mvn -B clean verify
+
+      - name: Upload JaCoCo coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
+          if-no-files-found: warn
