@@ -10,7 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -102,6 +105,43 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getMessage()).isEqualTo("Invalid email");
+    }
+
+    @Test
+    void handleValidationException_shouldReturn400WithGlobalErrorMessage_whenNoFieldErrorPresent() {
+
+        MethodParameter parameter = mock(MethodParameter.class);
+        BindingResult bindingResult = mock(BindingResult.class);
+        ObjectError globalError = new ObjectError("createOrderRequest", "At least one item is required");
+
+        when(bindingResult.getFieldError()).thenReturn(null);
+        when(bindingResult.getAllErrors()).thenReturn(List.of(globalError));
+
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(parameter, bindingResult);
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleValidationException(ex);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).isEqualTo("At least one item is required");
+    }
+
+    @Test
+    void handleValidationException_shouldReturn400WithGenericMessage_whenNoErrorsPresent() {
+
+        MethodParameter parameter = mock(MethodParameter.class);
+        BindingResult bindingResult = mock(BindingResult.class);
+
+        when(bindingResult.getFieldError()).thenReturn(null);
+        when(bindingResult.getAllErrors()).thenReturn(List.of());
+
+        MethodArgumentNotValidException ex =
+                new MethodArgumentNotValidException(parameter, bindingResult);
+
+        ResponseEntity<ApiResponse<Void>> response = handler.handleValidationException(ex);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).isEqualTo("Validation failed");
     }
 
     @Test
