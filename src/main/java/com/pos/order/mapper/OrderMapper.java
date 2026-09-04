@@ -1,35 +1,18 @@
 package com.pos.order.mapper;
 
-import com.pos.order.dto.*;
+import com.pos.order.dto.OrderItemResponse;
+import com.pos.order.dto.OrderResponse;
 import com.pos.order.entity.Order;
-import org.springframework.stereotype.Component;
+import com.pos.order.entity.OrderItem;
 
-import java.util.stream.Collectors;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Component
-public class OrderMapper {
+@Mapper(componentModel = "spring")
+public interface OrderMapper {
 
-    public OrderResponse toResponse(Order order) {
+    OrderResponse toResponse(Order order);
 
-        return OrderResponse.builder()
-                .id(order.getId())
-                .totalAmount(order.getTotalAmount())
-                .status(order.getStatus())
-                .createdAt(order.getCreatedAt())
-                .items(
-                        order.getItems()
-                                .stream()
-                                .map(item ->
-                                        OrderItemResponse.builder()
-                                                .productName(
-                                                        item.getProduct().getName()
-                                                )
-                                                .quantity(item.getQuantity())
-                                                .price(item.getPrice())
-                                                .build()
-                                )
-                                .collect(Collectors.toList())
-                )
-                .build();
-    }
+    @Mapping(target = "productName", source = "product.name")
+    OrderItemResponse toItemResponse(OrderItem item);
 }
