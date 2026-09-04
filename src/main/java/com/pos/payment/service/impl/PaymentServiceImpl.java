@@ -1,6 +1,8 @@
 package com.pos.payment.service.impl;
 
 import com.pos.order.entity.Order;
+import com.pos.order.entity.OrderItem;
+import com.pos.order.enums.OrderStatus;
 import com.pos.order.repository.OrderRepository;
 
 import com.pos.payment.dto.*;
@@ -13,6 +15,9 @@ import com.pos.payment.gateway.RazorpayUpiGateway;
 import com.pos.payment.gateway.StripeCardGateway;
 import com.pos.payment.repository.PaymentRepository;
 import com.pos.payment.service.PaymentService;
+
+import com.pos.product.entity.Product;
+import com.pos.product.repository.ProductRepository;
 
 import com.pos.common.exception.DuplicateResourceException;
 import com.pos.common.exception.ResourceNotFoundException;
@@ -41,6 +46,9 @@ public class PaymentServiceImpl
 
     private final OrderRepository
             orderRepository;
+
+    private final ProductRepository
+            productRepository;
 
     private final StripeCardGateway stripeCardGateway;
 
@@ -176,13 +184,15 @@ public class PaymentServiceImpl
             return;
         }
 
-        payment.setStatus(
-                result.success() ? PaymentStatus.SUCCESS : PaymentStatus.FAILED
-        );
-
         if (result.success()) {
 
+            payment.setStatus(PaymentStatus.SUCCESS);
             payment.setPaidAt(LocalDateTime.now());
+
+        } else {
+
+            payment.setStatus(PaymentStatus.FAILED);
+            cancelOrderAndRestoreStock(payment.getOrder());
         }
 
         paymentRepository.save(payment);
@@ -191,6 +201,37 @@ public class PaymentServiceImpl
                 "Payment {} marked {} via webhook",
                 payment.getId(),
                 payment.getStatus()
+        );
+    }
+
+    private void cancelOrderAndRestoreStock(
+            Order order
+    ) {
+
+        order.setStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+
+        for (OrderItem item : order.getItems()) {
+
+            Product product =
+                    productRepository.findByIdForUpdate(
+                            item.getProduct().getId()
+                    ).orElseThrow(() ->
+                            new ResourceNotFoundException(
+                                    "Product not found"
+                            )
+                    );
+
+            product.setStock(
+                    product.getStock() + item.getQuantity()
+            );
+
+            productRepository.save(product);
+        }
+
+        log.info(
+                "Order {} cancelled and stock restored after failed payment",
+                order.getId()
         );
     }
 

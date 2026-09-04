@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -101,7 +102,10 @@ class PaymentGatewayIntegrationTest {
         return JsonPath.read(loginResult.getResponse().getContentAsString(), "$.data.token");
     }
 
-    private Long createOrder(String adminToken, String suffix) throws Exception {
+    private record OrderAndProduct(Long orderId, Long productId, int initialStock) {
+    }
+
+    private OrderAndProduct createOrderWithProduct(String adminToken, String suffix) throws Exception {
 
         CategoryRequest categoryRequest = CategoryRequest.builder()
                 .name("Gadgets-" + suffix)
@@ -152,9 +156,16 @@ class PaymentGatewayIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        return ((Number) JsonPath.read(
+        Long orderId = ((Number) JsonPath.read(
                 orderResult.getResponse().getContentAsString(), "$.data.id"
         )).longValue();
+
+        return new OrderAndProduct(orderId, productId, 10);
+    }
+
+    private Long createOrder(String adminToken, String suffix) throws Exception {
+
+        return createOrderWithProduct(adminToken, suffix).orderId();
     }
 
     @Test
@@ -316,5 +327,54 @@ class PaymentGatewayIntegrationTest {
                         .content("raw-payload"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid Stripe webhook signature"));
+    }
+
+    @Test
+    void stripeWebhook_shouldCancelOrderAndRestoreStock_onFailedPayment() throws Exception {
+
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("gwadmin6-" + suffix + "@example.com", "adminPass123");
+        OrderAndProduct orderAndProduct = createOrderWithProduct(adminToken, suffix);
+
+        // The order already deducted 1 unit of stock at creation time.
+        mockMvc.perform(get("/api/products/{id}", orderAndProduct.productId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.data.stock").value(orderAndProduct.initialStock() - 1));
+
+        String reference = "pi_fail_" + suffix;
+
+        when(stripeCardGateway.createPaymentIntent(any(), any()))
+                .thenReturn(new GatewayCreateResult(reference, "secret"));
+
+        PaymentRequest paymentRequest = PaymentRequest.builder()
+                .orderId(orderAndProduct.orderId())
+                .method(PaymentMethod.CARD)
+                .build();
+
+        mockMvc.perform(post("/api/payments")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(paymentRequest)))
+                .andExpect(status().isOk());
+
+        when(stripeCardGateway.verifyAndParse("raw-payload", "valid-sig"))
+                .thenReturn(new GatewayWebhookResult(reference, false));
+
+        mockMvc.perform(post("/api/payments/webhooks/stripe")
+                        .header("Stripe-Signature", "valid-sig")
+                        .contentType("application/json")
+                        .content("raw-payload"))
+                .andExpect(status().isOk());
+
+        Payment payment = paymentRepository.findByTransactionId(reference).orElseThrow();
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+
+        mockMvc.perform(get("/api/orders/{id}", orderAndProduct.orderId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        mockMvc.perform(get("/api/products/{id}", orderAndProduct.productId())
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(jsonPath("$.data.stock").value(orderAndProduct.initialStock()));
     }
 }

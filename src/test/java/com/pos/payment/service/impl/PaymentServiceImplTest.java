@@ -3,6 +3,8 @@ package com.pos.payment.service.impl;
 import com.pos.common.exception.DuplicateResourceException;
 import com.pos.common.exception.ResourceNotFoundException;
 import com.pos.order.entity.Order;
+import com.pos.order.entity.OrderItem;
+import com.pos.order.enums.OrderStatus;
 import com.pos.order.repository.OrderRepository;
 import com.pos.payment.dto.PaymentRequest;
 import com.pos.payment.dto.PaymentResponse;
@@ -14,16 +16,18 @@ import com.pos.payment.gateway.GatewayWebhookResult;
 import com.pos.payment.gateway.RazorpayUpiGateway;
 import com.pos.payment.gateway.StripeCardGateway;
 import com.pos.payment.repository.PaymentRepository;
+import com.pos.product.entity.Product;
+import com.pos.product.repository.ProductRepository;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +46,9 @@ class PaymentServiceImplTest {
     private OrderRepository orderRepository;
 
     @Mock
+    private ProductRepository productRepository;
+
+    @Mock
     private StripeCardGateway stripeCardGateway;
 
     @Mock
@@ -52,7 +59,12 @@ class PaymentServiceImplTest {
 
     private Order order() {
 
-        return Order.builder().id(1L).totalAmount(BigDecimal.valueOf(100)).build();
+        return Order.builder()
+                .id(1L)
+                .totalAmount(BigDecimal.valueOf(100))
+                .status(OrderStatus.COMPLETED)
+                .items(List.of())
+                .build();
     }
 
     private void stubSave() {
@@ -246,6 +258,62 @@ class PaymentServiceImplTest {
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
         assertThat(payment.getPaidAt()).isNull();
         verify(paymentRepository).save(payment);
+    }
+
+    @Test
+    void handleStripeWebhook_shouldCancelOrderAndRestoreStock_onFailureEvent() {
+
+        Product cola = Product.builder().id(1L).name("Cola").stock(3).build();
+        Product chips = Product.builder().id(2L).name("Chips").stock(5).build();
+
+        Order order = Order.builder()
+                .id(1L)
+                .totalAmount(BigDecimal.valueOf(100))
+                .status(OrderStatus.COMPLETED)
+                .items(List.of(
+                        OrderItem.builder().product(cola).quantity(2).build(),
+                        OrderItem.builder().product(chips).quantity(4).build()
+                ))
+                .build();
+
+        Payment payment = Payment.builder()
+                .id(5L)
+                .order(order)
+                .amount(BigDecimal.valueOf(100))
+                .method(PaymentMethod.CARD)
+                .status(PaymentStatus.PENDING)
+                .transactionId("pi_123")
+                .build();
+
+        when(stripeCardGateway.verifyAndParse("payload", "sig"))
+                .thenReturn(new GatewayWebhookResult("pi_123", false));
+        when(paymentRepository.findByTransactionId("pi_123")).thenReturn(Optional.of(payment));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cola));
+        when(productRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(chips));
+
+        paymentService.handleStripeWebhook("payload", "sig");
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(cola.getStock()).isEqualTo(5);
+        assertThat(chips.getStock()).isEqualTo(9);
+
+        verify(orderRepository).save(order);
+        verify(productRepository).save(cola);
+        verify(productRepository).save(chips);
+    }
+
+    @Test
+    void handleStripeWebhook_shouldNotTouchOrderOrStock_onSuccessEvent() {
+
+        Payment payment = pendingPayment("pi_123");
+
+        when(stripeCardGateway.verifyAndParse("payload", "sig"))
+                .thenReturn(new GatewayWebhookResult("pi_123", true));
+        when(paymentRepository.findByTransactionId("pi_123")).thenReturn(Optional.of(payment));
+
+        paymentService.handleStripeWebhook("payload", "sig");
+
+        verifyNoInteractions(orderRepository, productRepository);
     }
 
     @Test
