@@ -376,4 +376,52 @@ class ProductServiceImplTest {
         Pageable captured = pageableCaptor.getValue();
         assertThat(captured.getSort().getOrderFor("name")).isNotNull();
     }
+
+    @Test
+    void getAllProducts_shouldCapSize_whenRequestedSizeExceedsMax() {
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        when(productRepository.findAll(pageableCaptor.capture())).thenReturn(Page.empty());
+
+        productService.getAllProducts(0, 1_000_000);
+
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
+    }
+
+    @Test
+    void getAllProducts_shouldClampSizeBelowOneToOne() {
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        when(productRepository.findAll(pageableCaptor.capture())).thenReturn(Page.empty());
+
+        productService.getAllProducts(0, 0);
+
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(1);
+    }
+
+    @Test
+    void getAllProducts_shouldClampNegativePageToZero() {
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        when(productRepository.findAll(pageableCaptor.capture())).thenReturn(Page.empty());
+
+        productService.getAllProducts(-5, 10);
+
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
+    }
+
+    @Test
+    void getProducts_shouldCapSize_whenRequestedSizeExceedsMax() {
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+        when(productRepository.findAll(pageableCaptor.capture())).thenReturn(Page.empty());
+
+        productService.getProducts(null, 0, 1_000_000, "name");
+
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(100);
+    }
 }

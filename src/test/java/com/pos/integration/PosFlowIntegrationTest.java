@@ -533,4 +533,18 @@ class PosFlowIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stock").value(15));
     }
+
+    @Test
+    void getAllProducts_shouldCapPageSize_whenRequestedSizeIsExcessiveEndToEnd() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("admin7-" + uniqueSuffix + "@example.com", "adminPass123");
+
+        mockMvc.perform(get("/api/products")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .param("page", "0")
+                        .param("size", "1000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.size").value(100));
+    }
 }

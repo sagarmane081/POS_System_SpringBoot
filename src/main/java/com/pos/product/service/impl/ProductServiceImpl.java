@@ -30,6 +30,8 @@ import java.util.Set;
 public class ProductServiceImpl
         implements ProductService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ProductRepository productRepository;
 
     private final CategoryRepository categoryRepository;
@@ -43,7 +45,10 @@ public class ProductServiceImpl
     ) {
 
         Pageable pageable =
-                PageRequest.of(page, size);
+                PageRequest.of(
+                        clampPage(page),
+                        clampSize(size)
+                );
 
         return productRepository
                 .findAll(pageable)
@@ -288,8 +293,8 @@ public class ProductServiceImpl
 
         Pageable pageable =
                 PageRequest.of(
-                        page,
-                        size,
+                        clampPage(page),
+                        clampSize(size),
                         Sort.by(sortField)
                 );
 
@@ -315,5 +320,20 @@ public class ProductServiceImpl
         return products.map(
                 productMapper::toResponse
         );
+    }
+
+    private int clampPage(int page) {
+
+        return Math.max(page, 0);
+    }
+
+    private int clampSize(int size) {
+
+        if (size < 1) {
+
+            return 1;
+        }
+
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 }
