@@ -105,7 +105,7 @@ public class OrderService {
 
     public List<OrderResponse> getAllOrders() {
 
-        return orderRepository.findAll()
+        return orderRepository.findAllWithItems()
                 .stream()
                 .map(orderMapper::toResponse)
                 .toList();
@@ -113,7 +113,7 @@ public class OrderService {
 
     public OrderResponse getOrderById(Long orderId) {
 
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Order not found"

@@ -147,7 +147,7 @@ class OrderServiceTest {
         Order order = new Order();
         OrderResponse response = OrderResponse.builder().id(1L).build();
 
-        when(orderRepository.findAll()).thenReturn(List.of(order));
+        when(orderRepository.findAllWithItems()).thenReturn(List.of(order));
         when(orderMapper.toResponse(order)).thenReturn(response);
 
         assertThat(orderService.getAllOrders()).containsExactly(response);
@@ -159,7 +159,7 @@ class OrderServiceTest {
         Order order = new Order();
         OrderResponse response = OrderResponse.builder().id(1L).build();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdWithItems(1L)).thenReturn(Optional.of(order));
         when(orderMapper.toResponse(order)).thenReturn(response);
 
         assertThat(orderService.getOrderById(1L)).isEqualTo(response);
@@ -168,7 +168,7 @@ class OrderServiceTest {
     @Test
     void getOrderById_shouldThrowResourceNotFoundException_whenMissing() {
 
-        when(orderRepository.findById(99L)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdWithItems(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderById(99L))
                 .isInstanceOf(ResourceNotFoundException.class)
