@@ -9,6 +9,7 @@ import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
 import com.pos.auth.security.JwtProvider;
+import com.pos.auth.util.EmailNormalizer;
 import com.pos.common.exception.DuplicateResourceException;
 import com.pos.common.exception.ResourceNotFoundException;
 
@@ -34,8 +35,11 @@ public class AuthService {
             RegisterRequest request
     ) {
 
-        if (userRepository.existsByEmail(
-                request.getEmail()
+        String normalizedEmail =
+                EmailNormalizer.normalize(request.getEmail());
+
+        if (userRepository.existsByEmailIgnoreCase(
+                normalizedEmail
         )) {
 
             throw new DuplicateResourceException(
@@ -45,7 +49,7 @@ public class AuthService {
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(
                         passwordEncoder.encode(
                                 request.getPassword()
@@ -76,11 +80,14 @@ public class AuthService {
             LoginRequest request
     ) {
 
+        String normalizedEmail =
+                EmailNormalizer.normalize(request.getEmail());
+
         authenticationManager.authenticate(
 
                 new UsernamePasswordAuthenticationToken(
 
-                        request.getEmail(),
+                        normalizedEmail,
 
                         request.getPassword()
                 )
@@ -88,8 +95,8 @@ public class AuthService {
 
         User user =
                 userRepository
-                        .findByEmail(
-                                request.getEmail()
+                        .findByEmailIgnoreCase(
+                                normalizedEmail
                         )
                         .orElseThrow(() ->
 
@@ -118,8 +125,11 @@ public class AuthService {
             CreateUserRequest request
     ) {
 
-        if (userRepository.existsByEmail(
-                request.getEmail()
+        String normalizedEmail =
+                EmailNormalizer.normalize(request.getEmail());
+
+        if (userRepository.existsByEmailIgnoreCase(
+                normalizedEmail
         )) {
 
             throw new DuplicateResourceException(
@@ -129,7 +139,7 @@ public class AuthService {
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
+                .email(normalizedEmail)
                 .password(
                         passwordEncoder.encode(
                                 request.getPassword()

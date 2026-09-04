@@ -79,4 +79,36 @@ class UserRepositoryTest {
 
         assertThat(userRepository.existsByRole(Role.ROLE_ADMIN)).isFalse();
     }
+
+    @Test
+    void existsByEmailIgnoreCase_shouldReturnTrue_regardlessOfStoredOrQueriedCasing() {
+
+        userRepository.save(user("John@Example.com"));
+
+        assertThat(userRepository.existsByEmailIgnoreCase("john@example.com")).isTrue();
+        assertThat(userRepository.existsByEmailIgnoreCase("JOHN@EXAMPLE.COM")).isTrue();
+    }
+
+    @Test
+    void existsByEmailIgnoreCase_shouldReturnFalse_whenUserMissing() {
+
+        assertThat(userRepository.existsByEmailIgnoreCase("ghost@example.com")).isFalse();
+    }
+
+    @Test
+    void findByEmailIgnoreCase_shouldReturnUser_regardlessOfStoredOrQueriedCasing() {
+
+        userRepository.save(user("John@Example.com"));
+
+        Optional<User> found = userRepository.findByEmailIgnoreCase("JOHN@EXAMPLE.COM");
+
+        assertThat(found).isPresent();
+        assertThat(found.get().getEmail()).isEqualTo("John@Example.com");
+    }
+
+    @Test
+    void findByEmailIgnoreCase_shouldReturnEmpty_whenMissing() {
+
+        assertThat(userRepository.findByEmailIgnoreCase("ghost@example.com")).isEmpty();
+    }
 }

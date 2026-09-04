@@ -3,6 +3,7 @@ package com.pos.auth.config;
 import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
+import com.pos.auth.util.EmailNormalizer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,19 +47,21 @@ public class AdminBootstrapRunner implements CommandLineRunner {
             return;
         }
 
-        if (userRepository.existsByEmail(bootstrapEmail)) {
+        String normalizedEmail = EmailNormalizer.normalize(bootstrapEmail);
+
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
 
             log.warn(
                     "ADMIN_EMAIL {} is already registered to a non-admin user; " +
                             "skipping bootstrap. Promote the account manually if needed.",
-                    bootstrapEmail
+                    normalizedEmail
             );
             return;
         }
 
         User admin = User.builder()
                 .name("Administrator")
-                .email(bootstrapEmail)
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(bootstrapPassword))
                 .role(Role.ROLE_ADMIN)
                 .build();
@@ -67,7 +70,7 @@ public class AdminBootstrapRunner implements CommandLineRunner {
 
         log.info(
                 "Bootstrap admin account created for {}",
-                bootstrapEmail
+                normalizedEmail
         );
     }
 }

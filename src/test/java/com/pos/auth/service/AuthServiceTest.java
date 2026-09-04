@@ -57,7 +57,7 @@ class AuthServiceTest {
         request.setEmail("john@example.com");
         request.setPassword("password123");
 
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase("john@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(DuplicateResourceException.class)
@@ -74,7 +74,7 @@ class AuthServiceTest {
         request.setEmail("john@example.com");
         request.setPassword("password123");
 
-        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("john@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
@@ -95,6 +95,28 @@ class AuthServiceTest {
     }
 
     @Test
+    void register_shouldNormalizeEmail_beforeCheckingDuplicatesAndStoring() {
+
+        RegisterRequest request = new RegisterRequest();
+        request.setName("John Doe");
+        request.setEmail("  John@Example.COM  ");
+        request.setPassword("password123");
+
+        when(userRepository.existsByEmailIgnoreCase("john@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
+        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+
+        authService.register(request);
+
+        verify(userRepository).existsByEmailIgnoreCase("john@example.com");
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("john@example.com");
+    }
+
+    @Test
     void login_shouldAuthenticateAndReturnTokens_whenCredentialsAreValid() {
 
         LoginRequest request = new LoginRequest();
@@ -109,7 +131,7 @@ class AuthServiceTest {
                 .role(Role.ROLE_USER)
                 .build();
 
-        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("john@example.com")).thenReturn(Optional.of(user));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
         when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
 
@@ -136,7 +158,7 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadCredentialsException.class);
 
-        verify(userRepository, never()).findByEmail(anyString());
+        verify(userRepository, never()).findByEmailIgnoreCase(anyString());
     }
 
     @Test
@@ -146,11 +168,38 @@ class AuthServiceTest {
         request.setEmail("ghost@example.com");
         request.setPassword("password123");
 
-        when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("ghost@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("User not found");
+    }
+
+    @Test
+    void login_shouldNormalizeEmail_beforeAuthenticatingAndLookingUpUser() {
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("  John@Example.COM  ");
+        request.setPassword("password123");
+
+        User user = User.builder()
+                .id(1L)
+                .name("John Doe")
+                .email("john@example.com")
+                .password("encoded-password")
+                .role(Role.ROLE_USER)
+                .build();
+
+        when(userRepository.findByEmailIgnoreCase("john@example.com")).thenReturn(Optional.of(user));
+        when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
+        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+
+        authService.login(request);
+
+        verify(authenticationManager).authenticate(
+                new UsernamePasswordAuthenticationToken("john@example.com", "password123")
+        );
+        verify(userRepository).findByEmailIgnoreCase("john@example.com");
     }
 
     @Test
@@ -162,7 +211,7 @@ class AuthServiceTest {
         request.setPassword("password123");
         request.setRole(Role.ROLE_CASHIER);
 
-        when(userRepository.existsByEmail("cashier@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase("cashier@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.createUser(request))
                 .isInstanceOf(DuplicateResourceException.class)
@@ -180,7 +229,7 @@ class AuthServiceTest {
         request.setPassword("password123");
         request.setRole(Role.ROLE_CASHIER);
 
-        when(userRepository.existsByEmail("cashier@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("cashier@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
@@ -198,5 +247,24 @@ class AuthServiceTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue().getPassword()).isEqualTo("encoded-password");
+    }
+
+    @Test
+    void createUser_shouldNormalizeEmail_beforeCheckingDuplicatesAndStoring() {
+
+        CreateUserRequest request = new CreateUserRequest();
+        request.setName("Cashier One");
+        request.setEmail("  Cashier@Example.COM  ");
+        request.setPassword("password123");
+        request.setRole(Role.ROLE_CASHIER);
+
+        when(userRepository.existsByEmailIgnoreCase("cashier@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = authService.createUser(request);
+
+        assertThat(response.getEmail()).isEqualTo("cashier@example.com");
+        verify(userRepository).existsByEmailIgnoreCase("cashier@example.com");
     }
 }

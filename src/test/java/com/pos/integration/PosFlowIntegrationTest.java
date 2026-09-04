@@ -423,4 +423,47 @@ class PosFlowIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("data constraint")));
     }
+
+    @Test
+    void emailCaseSensitivity_shouldBeIgnoredForDuplicateCheckAndLogin() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String mixedCaseEmail = "Jane." + uniqueSuffix + "@Example.COM";
+        String lowerCaseEmail = mixedCaseEmail.toLowerCase();
+
+        RegisterRequest registerRequest = new RegisterRequest();
+        registerRequest.setName("Jane");
+        registerRequest.setEmail(mixedCaseEmail);
+        registerRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isOk());
+
+        // Registering the same address with different casing must be rejected as a duplicate.
+        RegisterRequest duplicateRequest = new RegisterRequest();
+        duplicateRequest.setName("Jane Again");
+        duplicateRequest.setEmail(lowerCaseEmail);
+        duplicateRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(duplicateRequest)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Email already exists"));
+
+        // Logging in with different casing than what was originally submitted must still work.
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setEmail(mixedCaseEmail.toUpperCase());
+        loginRequest.setPassword("password123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.token").isNotEmpty());
+
+        assertThat(userRepository.findByEmail(lowerCaseEmail)).isPresent();
+    }
 }

@@ -73,7 +73,7 @@ class AdminBootstrapRunnerTest {
         configure("admin@example.com", "adminPass123");
 
         when(userRepository.existsByRole(Role.ROLE_ADMIN)).thenReturn(false);
-        when(userRepository.existsByEmail("admin@example.com")).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase("admin@example.com")).thenReturn(true);
 
         runner.run();
 
@@ -87,7 +87,7 @@ class AdminBootstrapRunnerTest {
         configure("admin@example.com", "adminPass123");
 
         when(userRepository.existsByRole(Role.ROLE_ADMIN)).thenReturn(false);
-        when(userRepository.existsByEmail("admin@example.com")).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("admin@example.com")).thenReturn(false);
         when(passwordEncoder.encode("adminPass123")).thenReturn("encoded-password");
 
         runner.run();
@@ -99,5 +99,23 @@ class AdminBootstrapRunnerTest {
         assertThat(savedUser.getEmail()).isEqualTo("admin@example.com");
         assertThat(savedUser.getPassword()).isEqualTo("encoded-password");
         assertThat(savedUser.getRole()).isEqualTo(Role.ROLE_ADMIN);
+    }
+
+    @Test
+    void run_shouldNormalizeConfiguredEmail_beforeCheckingAndStoring() throws Exception {
+
+        configure("  Admin@Example.COM  ", "adminPass123");
+
+        when(userRepository.existsByRole(Role.ROLE_ADMIN)).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase("admin@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("adminPass123")).thenReturn("encoded-password");
+
+        runner.run();
+
+        verify(userRepository).existsByEmailIgnoreCase("admin@example.com");
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(userCaptor.capture());
+        assertThat(userCaptor.getValue().getEmail()).isEqualTo("admin@example.com");
     }
 }
