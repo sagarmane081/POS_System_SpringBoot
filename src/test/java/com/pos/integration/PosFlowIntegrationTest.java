@@ -466,4 +466,71 @@ class PosFlowIntegrationTest {
 
         assertThat(userRepository.findByEmail(lowerCaseEmail)).isPresent();
     }
+
+    @Test
+    void createOrder_shouldMergeDuplicateLineItems_intoOneOrderItemEndToEnd() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("admin6-" + uniqueSuffix + "@example.com", "adminPass123");
+
+        CategoryRequest categoryRequest = CategoryRequest.builder()
+                .name("Drinks-" + uniqueSuffix)
+                .build();
+
+        MvcResult categoryResult = mockMvc.perform(post("/api/categories")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(categoryRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Long categoryId = ((Number) JsonPath.read(
+                categoryResult.getResponse().getContentAsString(), "$.data.id"
+        )).longValue();
+
+        ProductRequest productRequest = ProductRequest.builder()
+                .name("Soda")
+                .sku("SKU-DUP-" + uniqueSuffix)
+                .mrp(BigDecimal.valueOf(15))
+                .sellingPrice(BigDecimal.valueOf(10))
+                .stock(20)
+                .categoryId(categoryId)
+                .build();
+
+        MvcResult productResult = mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(productRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Long productId = ((Number) JsonPath.read(
+                productResult.getResponse().getContentAsString(), "$.data.id"
+        )).longValue();
+
+        OrderItemRequest firstLine = new OrderItemRequest();
+        firstLine.setProductId(productId);
+        firstLine.setQuantity(2);
+
+        OrderItemRequest secondLine = new OrderItemRequest();
+        secondLine.setProductId(productId);
+        secondLine.setQuantity(3);
+
+        CreateOrderRequest orderRequest = new CreateOrderRequest();
+        orderRequest.setItems(List.of(firstLine, secondLine));
+
+        mockMvc.perform(post("/api/orders")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(orderRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(5))
+                .andExpect(jsonPath("$.data.totalAmount").value(50));
+
+        mockMvc.perform(get("/api/products/{id}", productId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.stock").value(15));
+    }
 }

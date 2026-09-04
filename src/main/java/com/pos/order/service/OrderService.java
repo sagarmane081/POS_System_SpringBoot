@@ -18,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,11 +43,25 @@ public class OrderService {
 
         Order order = new Order();
 
-        for (OrderItemRequest itemRequest : request.getItems()) {
+        // Merge repeated productIds into a single line so the same product
+        // is locked/checked/decremented once, with quantities combined,
+        // instead of once per occurrence in the request.
+        Map<Long, Integer> quantityByProductId = request.getItems().stream()
+                .collect(Collectors.toMap(
+                        OrderItemRequest::getProductId,
+                        OrderItemRequest::getQuantity,
+                        Integer::sum,
+                        LinkedHashMap::new
+                ));
+
+        for (Map.Entry<Long, Integer> entry : quantityByProductId.entrySet()) {
+
+            Long productId = entry.getKey();
+            Integer quantity = entry.getValue();
 
             Product product =
                     productRepository.findByIdForUpdate(
-                            itemRequest.getProductId()
+                            productId
                     ).orElseThrow(() ->
                             new ResourceNotFoundException(
                                     "Product not found"
@@ -52,7 +69,7 @@ public class OrderService {
                     );
 
             if (product.getStock()
-                    < itemRequest.getQuantity()) {
+                    < quantity) {
 
                 throw new InsufficientStockException(
                         "Insufficient stock for "
@@ -62,7 +79,7 @@ public class OrderService {
 
             product.setStock(
                     product.getStock()
-                            - itemRequest.getQuantity()
+                            - quantity
             );
 
             productRepository.save(product);
@@ -70,7 +87,7 @@ public class OrderService {
             OrderItem orderItem =
                     OrderItem.builder()
                             .product(product)
-                            .quantity(itemRequest.getQuantity())
+                            .quantity(quantity)
                             .price(product.getSellingPrice())
                             .order(order)
                             .build();
@@ -81,7 +98,7 @@ public class OrderService {
                     totalAmount.add(
                             product.getSellingPrice().multiply(
                                     BigDecimal.valueOf(
-                                            itemRequest.getQuantity()
+                                            quantity
                                     )
                             )
                     );

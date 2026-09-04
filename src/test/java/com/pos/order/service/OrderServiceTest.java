@@ -109,6 +109,54 @@ class OrderServiceTest {
     }
 
     @Test
+    void createOrder_shouldMergeDuplicateLineItems_forSameProduct() {
+
+        Product cola = product(1L, "Cola", BigDecimal.valueOf(10), 20);
+
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setItems(List.of(itemRequest(1L, 2), itemRequest(1L, 3)));
+
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cola));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderMapper.toResponse(any(Order.class)))
+                .thenReturn(OrderResponse.builder().totalAmount(BigDecimal.valueOf(50)).build());
+
+        orderService.createOrder(request);
+
+        // Locked/read exactly once for the product, not once per duplicate line.
+        verify(productRepository, times(1)).findByIdForUpdate(1L);
+        verify(productRepository, times(1)).save(cola);
+        assertThat(cola.getStock()).isEqualTo(15);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+
+        Order savedOrder = orderCaptor.getValue();
+        assertThat(savedOrder.getItems()).hasSize(1);
+        assertThat(savedOrder.getItems().get(0).getQuantity()).isEqualTo(5);
+        assertThat(savedOrder.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(50));
+    }
+
+    @Test
+    void createOrder_shouldCheckStockAgainstMergedQuantity_whenDuplicateLineItemsExceedStock() {
+
+        Product cola = product(1L, "Cola", BigDecimal.valueOf(10), 4);
+
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setItems(List.of(itemRequest(1L, 3), itemRequest(1L, 3)));
+
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(cola));
+
+        assertThatThrownBy(() -> orderService.createOrder(request))
+                .isInstanceOf(InsufficientStockException.class)
+                .hasMessageContaining("Cola");
+
+        assertThat(cola.getStock()).isEqualTo(4);
+        verify(orderRepository, never()).save(any());
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
     void createOrder_shouldThrowResourceNotFoundException_whenProductMissing() {
 
         CreateOrderRequest request = new CreateOrderRequest();
