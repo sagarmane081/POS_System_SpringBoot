@@ -4,6 +4,7 @@ import com.pos.common.response.ApiResponse;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -48,6 +49,19 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().getMessage()).isEqualTo("Insufficient stock for Coke");
+    }
+
+    @Test
+    void handleDataIntegrityViolation_shouldReturn409WithMessage() {
+
+        ResponseEntity<ApiResponse<?>> response =
+                handler.handleDataIntegrityViolation(
+                        new DataIntegrityViolationException("Referential integrity constraint violation")
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().isSuccess()).isFalse();
+        assertThat(response.getBody().getMessage()).contains("data constraint");
     }
 
     @Test

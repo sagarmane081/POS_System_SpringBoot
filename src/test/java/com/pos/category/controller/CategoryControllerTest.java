@@ -7,6 +7,7 @@ import com.pos.category.dto.CategoryRequest;
 import com.pos.category.dto.CategoryResponse;
 import com.pos.category.service.CategoryService;
 import com.pos.common.exception.ResourceNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -151,5 +152,16 @@ class CategoryControllerTest {
 
         mockMvc.perform(delete("/api/categories/{id}", 99L))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteCategory_shouldReturn409_whenStillReferencedByProducts() throws Exception {
+
+        org.mockito.Mockito.doThrow(new DataIntegrityViolationException("FK violation"))
+                .when(categoryService).deleteCategory(1L);
+
+        mockMvc.perform(delete("/api/categories/{id}", 1L))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("data constraint")));
     }
 }

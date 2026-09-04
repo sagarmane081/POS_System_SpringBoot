@@ -128,6 +128,12 @@ public class CategoryServiceImpl
 
         categoryRepository.delete(category);
 
+        // Force the delete to execute now so a referential-integrity violation
+        // (e.g. products still assigned to this category) surfaces here as a
+        // DataIntegrityViolationException, rather than being deferred to
+        // whenever the persistence context next flushes.
+        categoryRepository.flush();
+
         log.info(
                 "Category deleted: {}",
                 category.getName()

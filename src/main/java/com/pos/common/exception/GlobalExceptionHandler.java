@@ -2,6 +2,7 @@ package com.pos.common.exception;
 
 import com.pos.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -65,6 +66,28 @@ public class GlobalExceptionHandler {
 
                         false,
                         ex.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<?>>
+    handleDataIntegrityViolation(
+            DataIntegrityViolationException ex
+    ) {
+
+        log.warn("Data integrity violation", ex);
+
+        return ResponseEntity.status(
+                HttpStatus.CONFLICT
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        "The request could not be completed because it violates a data constraint " +
+                                "(e.g. a duplicate value, or a record still referenced by another resource)",
                         null
                 )
         );

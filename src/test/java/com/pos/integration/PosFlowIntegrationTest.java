@@ -381,4 +381,46 @@ class PosFlowIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Email already exists"));
     }
+
+    @Test
+    void deleteCategory_shouldReturn409EndToEnd_whenProductsStillReferenceIt() throws Exception {
+
+        String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+        String adminToken = createAdminAndLogin("admin5-" + uniqueSuffix + "@example.com", "adminPass123");
+
+        CategoryRequest categoryRequest = CategoryRequest.builder()
+                .name("Dairy-" + uniqueSuffix)
+                .build();
+
+        MvcResult categoryResult = mockMvc.perform(post("/api/categories")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(categoryRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Long categoryId = ((Number) JsonPath.read(
+                categoryResult.getResponse().getContentAsString(), "$.data.id"
+        )).longValue();
+
+        ProductRequest productRequest = ProductRequest.builder()
+                .name("Milk")
+                .sku("SKU-MILK-" + uniqueSuffix)
+                .mrp(BigDecimal.valueOf(3))
+                .sellingPrice(BigDecimal.valueOf(2))
+                .stock(10)
+                .categoryId(categoryId)
+                .build();
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(productRequest)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/categories/{id}", categoryId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("data constraint")));
+    }
 }
