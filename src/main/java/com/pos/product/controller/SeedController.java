@@ -16,7 +16,7 @@ public class SeedController {
     private final ProductSeedService productSeedService;
 
     @PostMapping("/products")
-    public ResponseEntity<ApiResponse<?>> seedProducts() {
+    public ResponseEntity<ApiResponse<Void>> seedProducts() {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(

@@ -93,7 +93,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     logout(
 
             @RequestBody

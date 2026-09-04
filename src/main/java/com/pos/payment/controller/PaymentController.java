@@ -20,7 +20,7 @@ public class PaymentController {
             paymentService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<PaymentResponse>>
     createPayment(
 
             @Valid

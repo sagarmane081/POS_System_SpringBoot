@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleResourceNotFound(
             ResourceNotFoundException ex
     ) {
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleDuplicateResource(
             DuplicateResourceException ex
     ) {
@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InsufficientStockException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleInsufficientStock(
             InsufficientStockException ex
     ) {
@@ -72,7 +72,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleDataIntegrityViolation(
             DataIntegrityViolationException ex
     ) {
@@ -94,7 +94,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidRefreshTokenException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleInvalidRefreshToken(
             InvalidRefreshTokenException ex
     ) {
@@ -113,7 +113,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleAuthenticationException(
             AuthenticationException ex
     ) {
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(
             MethodArgumentNotValidException.class
     )
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleValidationException(
             MethodArgumentNotValidException ex
     ) {
@@ -157,7 +157,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Void>>
     handleGenericException(
             Exception ex
     ) {

@@ -11,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
@@ -90,7 +92,7 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<ProductResponse>
             > updateProduct(
 
             @PathVariable Long id,
@@ -114,7 +116,7 @@ public class ProductController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<Void>
             > deleteProduct(
             @PathVariable Long id
     ) {
@@ -131,7 +133,7 @@ public class ProductController {
     }
 
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<ApiResponse<?>> getProductsByCategory(
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByCategory(
             @PathVariable Long categoryId
     ) {
 
@@ -145,7 +147,7 @@ public class ProductController {
     }
 
     @GetMapping("/low-stock")
-    public ResponseEntity<ApiResponse<?>> getLowStockProducts() {
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getLowStockProducts() {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
@@ -157,7 +159,7 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/increase-stock")
-    public ResponseEntity<ApiResponse<?>> increaseStock(
+    public ResponseEntity<ApiResponse<ProductResponse>> increaseStock(
             @PathVariable Long id,
             @Valid @RequestBody StockUpdateRequest request
     ) {
@@ -175,7 +177,7 @@ public class ProductController {
     }
 
     @PatchMapping("/{id}/decrease-stock")
-    public ResponseEntity<ApiResponse<?>> decreaseStock(
+    public ResponseEntity<ApiResponse<ProductResponse>> decreaseStock(
             @PathVariable Long id,
             @Valid @RequestBody StockUpdateRequest request
     ) {
@@ -193,7 +195,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<Page<ProductResponse>>>
     getProducts(
 
             @RequestParam(

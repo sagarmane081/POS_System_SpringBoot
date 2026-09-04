@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
@@ -20,7 +22,7 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<List<CategoryResponse>>
             > getAllCategories() {
 
         return ResponseEntity.ok(
@@ -35,7 +37,7 @@ public class CategoryController {
 
     @GetMapping("/{id}")
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<CategoryResponse>
             > getCategoryById(
             @PathVariable Long id
     ) {
@@ -52,7 +54,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<CategoryResponse>
             > createCategory(
             @Valid
             @RequestBody
@@ -71,7 +73,7 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<CategoryResponse>
             > updateCategory(
             @PathVariable Long id,
 
@@ -95,7 +97,7 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<
-            ApiResponse<?>
+            ApiResponse<Void>
             > deleteCategory(
             @PathVariable Long id
     ) {

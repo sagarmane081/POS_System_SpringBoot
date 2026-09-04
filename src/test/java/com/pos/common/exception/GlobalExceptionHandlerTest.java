@@ -23,7 +23,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleResourceNotFound_shouldReturn404WithMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleResourceNotFound(new ResourceNotFoundException("Product not found"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -34,7 +34,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleDuplicateResource_shouldReturn409WithMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleDuplicateResource(new DuplicateResourceException("Email already exists"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -44,7 +44,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleInsufficientStock_shouldReturn409WithMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleInsufficientStock(new InsufficientStockException("Insufficient stock for Coke"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
@@ -54,7 +54,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleDataIntegrityViolation_shouldReturn409WithMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleDataIntegrityViolation(
                         new DataIntegrityViolationException("Referential integrity constraint violation")
                 );
@@ -65,9 +65,21 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleInvalidRefreshToken_shouldReturn401WithMessage() {
+
+        ResponseEntity<ApiResponse<Void>> response =
+                handler.handleInvalidRefreshToken(
+                        new InvalidRefreshTokenException("Invalid or expired refresh token")
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody().getMessage()).isEqualTo("Invalid or expired refresh token");
+    }
+
+    @Test
     void handleAuthenticationException_shouldReturn401WithGenericMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleAuthenticationException(new BadCredentialsException("Bad credentials"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
@@ -86,7 +98,7 @@ class GlobalExceptionHandlerTest {
         MethodArgumentNotValidException ex =
                 new MethodArgumentNotValidException(parameter, bindingResult);
 
-        ResponseEntity<ApiResponse<?>> response = handler.handleValidationException(ex);
+        ResponseEntity<ApiResponse<Void>> response = handler.handleValidationException(ex);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().getMessage()).isEqualTo("Invalid email");
@@ -95,7 +107,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleGenericException_shouldReturn500WithGenericMessage() {
 
-        ResponseEntity<ApiResponse<?>> response =
+        ResponseEntity<ApiResponse<Void>> response =
                 handler.handleGenericException(new RuntimeException("Something exploded"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);

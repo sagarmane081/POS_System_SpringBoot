@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -35,7 +37,7 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getAllOrders() {
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders() {
 
         return ResponseEntity.ok(
                 new ApiResponse<>(
@@ -47,7 +49,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<?>> getOrderById(
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
             @PathVariable Long id
     ) {
 
