@@ -4,7 +4,6 @@ import com.pos.common.response.ApiResponse;
 import com.pos.inventory.dto.StockUpdateRequest;
 import com.pos.product.dto.ProductRequest;
 import com.pos.product.dto.ProductResponse;
-import com.pos.product.service.ProductSeedService;
 import com.pos.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -234,19 +233,5 @@ public class ProductController {
                         )
                 )
         );
-    }
-
-    @RestController
-    @RequestMapping("/api/seed")
-    @RequiredArgsConstructor
-    public class SeedController {
-
-        private final ProductSeedService productSeedService;
-
-        @PostMapping("/products")
-        public String seedProducts(){
-
-            return productSeedService.seedProducts();
-        }
     }
 }

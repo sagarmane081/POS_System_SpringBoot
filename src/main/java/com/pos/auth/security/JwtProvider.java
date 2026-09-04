@@ -1,5 +1,6 @@
 package com.pos.auth.security;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -19,6 +20,10 @@ public class JwtProvider {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
+    private static final String TYPE_CLAIM = "type";
+    private static final String TYPE_ACCESS = "access";
+    private static final String TYPE_REFRESH = "refresh";
+    private static final long REFRESH_EXPIRATION_MS = 604800000;
 
     private Key getSignKey() {
 
@@ -35,6 +40,8 @@ public class JwtProvider {
         return Jwts.builder()
 
                 .setSubject(email)
+
+                .claim(TYPE_CLAIM, TYPE_ACCESS)
 
                 .setIssuedAt(
                         new Date()
@@ -65,6 +72,8 @@ public class JwtProvider {
 
                 .setSubject(email)
 
+                .claim(TYPE_CLAIM, TYPE_REFRESH)
+
                 .setIssuedAt(
                         new Date()
                 )
@@ -74,7 +83,7 @@ public class JwtProvider {
                         new Date(
 
                                 System.currentTimeMillis()
-                                        + 604800000
+                                        + REFRESH_EXPIRATION_MS
                         )
                 )
 
@@ -123,21 +132,43 @@ public class JwtProvider {
             String token
     ) {
 
+        return isTokenOfType(token, TYPE_ACCESS);
+    }
+
+
+    public boolean validateRefreshToken(
+            String token
+    ) {
+
+        return isTokenOfType(token, TYPE_REFRESH);
+    }
+
+
+    private boolean isTokenOfType(
+            String token,
+            String expectedType
+    ) {
+
         try {
 
-            Jwts.parser()
+            Claims claims =
+                    Jwts.parser()
 
-                    .setSigningKey(
-                            getSignKey()
-                    )
+                            .setSigningKey(
+                                    getSignKey()
+                            )
 
-                    .build()
+                            .build()
 
-                    .parseClaimsJws(
-                            token
-                    );
+                            .parseClaimsJws(
+                                    token
+                            )
 
-            return true;
+                            .getBody();
+
+            return expectedType.equals(
+                    claims.get(TYPE_CLAIM, String.class)
+            );
 
         } catch (Exception ex) {
 

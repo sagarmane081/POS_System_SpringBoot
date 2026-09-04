@@ -10,12 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.pos.analytics.dto.TopProductResponse;
-import com.pos.order.entity.OrderItem;
 
 @Service
 @RequiredArgsConstructor
@@ -43,13 +40,7 @@ public class AnalyticsServiceImpl
                 productRepository.countByStockLessThan(10);
 
         BigDecimal totalRevenue =
-                orderRepository.findAll()
-                        .stream()
-                        .map(order -> order.getTotalAmount())
-                        .reduce(
-                                BigDecimal.ZERO,
-                                BigDecimal::add
-                        );
+                orderRepository.sumTotalAmount();
 
         return DashboardResponse.builder()
                 .totalOrders(totalOrders)
@@ -72,65 +63,15 @@ public class AnalyticsServiceImpl
     @Override
     public List<TopProductResponse> getTopSellingProducts() {
 
-        List<OrderItem> orderItems =
-                orderItemRepository.findAll();
-
-        Map<Long, TopProductResponse> productMap =
-                new HashMap<>();
-
-        for (OrderItem item : orderItems) {
-
-            Long productId =
-                    item.getProduct().getId();
-
-            TopProductResponse existing =
-                    productMap.get(productId);
-
-            BigDecimal itemRevenue =
-                    item.getPrice().multiply(
-                            BigDecimal.valueOf(
-                                    item.getQuantity()
-                            )
-                    );
-
-            if (existing == null) {
-
-                productMap.put(
-                        productId,
-                        TopProductResponse.builder()
-                                .productId(productId)
-                                .productName(
-                                        item.getProduct().getName()
-                                )
-                                .totalQuantitySold(
-                                        item.getQuantity()
-                                )
-                                .totalRevenue(itemRevenue)
-                                .build()
-                );
-
-            } else {
-
-                existing.setTotalQuantitySold(
-                        existing.getTotalQuantitySold()
-                                + item.getQuantity()
-                );
-
-                existing.setTotalRevenue(
-                        existing.getTotalRevenue()
-                                .add(itemRevenue)
-                );
-            }
-        }
-
-        return productMap.values()
+        return orderItemRepository
+                .findTopSellingProducts()
                 .stream()
-                .sorted((a, b) ->
-                        b.getTotalQuantitySold()
-                                .compareTo(
-                                        a.getTotalQuantitySold()
-                                )
-                )
+                .map(row -> TopProductResponse.builder()
+                        .productId((Long) row[0])
+                        .productName((String) row[1])
+                        .totalQuantitySold(((Number) row[2]).intValue())
+                        .totalRevenue((BigDecimal) row[3])
+                        .build())
                 .toList();
     }
 }

@@ -7,6 +7,7 @@ import com.pos.product.repository.ProductRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -17,15 +18,31 @@ import java.util.UUID;
 public class ProductSeedService {
 
     private final ProductRepository productRepository;
+    private final RestTemplate restTemplate;
 
     public String seedProducts() {
 
-        RestTemplate restTemplate = new RestTemplate();
+        DummyProductResponse response;
 
-        DummyProductResponse response =
-                restTemplate.getForObject(
-                        "https://dummyjson.com/products?limit=400",
-                        DummyProductResponse.class);
+        try {
+
+            response = restTemplate.getForObject(
+                    "https://dummyjson.com/products?limit=400",
+                    DummyProductResponse.class);
+
+        } catch (RestClientException ex) {
+
+            throw new IllegalStateException(
+                    "Failed to fetch products from seed source", ex
+            );
+        }
+
+        if (response == null || response.getProducts() == null) {
+
+            throw new IllegalStateException(
+                    "Seed source returned no products"
+            );
+        }
 
         var products = response.getProducts()
                 .stream()

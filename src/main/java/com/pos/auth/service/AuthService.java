@@ -7,6 +7,8 @@ import com.pos.auth.entity.User;
 import com.pos.auth.enums.Role;
 import com.pos.auth.repository.UserRepository;
 import com.pos.auth.security.JwtProvider;
+import com.pos.common.exception.DuplicateResourceException;
+import com.pos.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +36,7 @@ public class AuthService {
                 request.getEmail()
         )) {
 
-            throw new RuntimeException(
+            throw new DuplicateResourceException(
                     "Email already exists"
             );
         }
@@ -89,7 +91,7 @@ public class AuthService {
                         )
                         .orElseThrow(() ->
 
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "User not found"
                                 )
                         );

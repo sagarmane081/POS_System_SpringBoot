@@ -43,7 +43,7 @@ public class OrderService {
         for (OrderItemRequest itemRequest : request.getItems()) {
 
             Product product =
-                    productRepository.findById(
+                    productRepository.findByIdForUpdate(
                             itemRequest.getProductId()
                     ).orElseThrow(() ->
                             new ResourceNotFoundException(

@@ -49,25 +49,36 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/h2-console/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
 
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/products/**")
+                        .hasAnyRole("ADMIN", "CASHIER")
+
                         .requestMatchers("/api/products/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/api/seed/**")
                         .hasRole("ADMIN")
 
                         .requestMatchers("/api/orders/**")
                         .hasAnyRole("ADMIN", "CASHIER")
 
+                        .requestMatchers("/api/payments/**")
+                        .hasAnyRole("ADMIN", "CASHIER")
+
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/categories/**")
+                        .hasAnyRole("ADMIN", "CASHIER")
+
+                        .requestMatchers("/api/categories/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers("/api/analytics/**")
+                        .hasRole("ADMIN")
+
                         .anyRequest()
                         .authenticated()
-                )
-
-                .headers(headers ->
-                        headers.frameOptions(
-                                frame -> frame.disable()
-                        )
                 )
 
                 .addFilterBefore(

@@ -3,7 +3,7 @@ spring:
     name: Sagar POS System
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://pos-mysql:3306/pos_system}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/pos_system}
     username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:admin}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -18,6 +18,7 @@ spring:
 server:
   port: 5000
 
+# jwt.secret defaults to a dev-only placeholder; ALWAYS set JWT_SECRET explicitly outside local dev.
 jwt:
-  secret: your-super-secret-key-your-super-secret-key
-  expiration: 86400000
+  secret: ${JWT_SECRET:your-super-secret-key-your-super-secret-key}
+  expiration: ${JWT_EXPIRATION:86400000}

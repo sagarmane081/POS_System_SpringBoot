@@ -9,6 +9,7 @@ import com.pos.auth.service.AuthService;
 import com.pos.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,12 +63,26 @@ public class AuthController {
             RefreshTokenRequest request
     ) {
 
+        String refreshToken = request.getRefreshToken();
+
+        if (refreshToken == null
+                || !jwtProvider.validateRefreshToken(refreshToken)) {
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(
+                            new ApiResponse<>(
+                                    false,
+                                    "Invalid or expired refresh token",
+                                    null
+                            )
+                    );
+        }
+
         String email =
 
                 jwtProvider
                         .extractUsername(
-                                request
-                                        .getRefreshToken()
+                                refreshToken
                         );
 
         String token =
@@ -89,8 +104,7 @@ public class AuthController {
 
                                 token,
 
-                                request
-                                        .getRefreshToken()
+                                refreshToken
                         )
                 )
         );

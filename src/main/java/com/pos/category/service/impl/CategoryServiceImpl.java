@@ -5,6 +5,7 @@ import com.pos.category.entity.Category;
 import com.pos.category.mapper.CategoryMapper;
 import com.pos.category.repository.CategoryRepository;
 import com.pos.category.service.CategoryService;
+import com.pos.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +47,7 @@ public class CategoryServiceImpl
                 categoryRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Category not found"
                                 )
                         );
@@ -89,7 +90,7 @@ public class CategoryServiceImpl
                 categoryRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Category not found"
                                 )
                         );
@@ -120,7 +121,7 @@ public class CategoryServiceImpl
                 categoryRepository
                         .findById(id)
                         .orElseThrow(() ->
-                                new RuntimeException(
+                                new ResourceNotFoundException(
                                         "Category not found"
                                 )
                         );

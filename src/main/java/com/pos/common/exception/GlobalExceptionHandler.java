@@ -1,12 +1,15 @@
 package com.pos.common.exception;
 
 import com.pos.common.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,6 +27,63 @@ public class GlobalExceptionHandler {
 
                         false,
                         ex.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponse<?>>
+    handleDuplicateResource(
+            DuplicateResourceException ex
+    ) {
+
+        return ResponseEntity.status(
+                HttpStatus.CONFLICT
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        ex.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<ApiResponse<?>>
+    handleInsufficientStock(
+            InsufficientStockException ex
+    ) {
+
+        return ResponseEntity.status(
+                HttpStatus.CONFLICT
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        ex.getMessage(),
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<?>>
+    handleAuthenticationException(
+            AuthenticationException ex
+    ) {
+
+        return ResponseEntity.status(
+                HttpStatus.UNAUTHORIZED
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        "Invalid email or password",
                         null
                 )
         );
@@ -60,6 +120,8 @@ public class GlobalExceptionHandler {
             Exception ex
     ) {
 
+        log.error("Unhandled exception", ex);
+
         return ResponseEntity.status(
                 HttpStatus.INTERNAL_SERVER_ERROR
         ).body(
@@ -67,7 +129,7 @@ public class GlobalExceptionHandler {
                 new ApiResponse<>(
 
                         false,
-                        ex.getMessage(),
+                        "An unexpected error occurred",
                         null
                 )
         );

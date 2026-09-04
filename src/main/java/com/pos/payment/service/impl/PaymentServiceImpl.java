@@ -9,6 +9,7 @@ import com.pos.payment.enums.PaymentStatus;
 import com.pos.payment.repository.PaymentRepository;
 import com.pos.payment.service.PaymentService;
 
+import com.pos.common.exception.DuplicateResourceException;
 import com.pos.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,13 @@ public class PaymentServiceImpl
                                 "Order not found"
                         )
                 );
+
+        if (paymentRepository.existsByOrderId(order.getId())) {
+
+            throw new DuplicateResourceException(
+                    "Payment already exists for this order"
+            );
+        }
 
         Payment payment =
                 Payment.builder()

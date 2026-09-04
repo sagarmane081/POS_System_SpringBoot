@@ -11,6 +11,7 @@ import com.pos.product.service.ProductService;
 import com.pos.category.entity.Category;
 import com.pos.category.repository.CategoryRepository;
 
+import com.pos.common.exception.InsufficientStockException;
 import com.pos.common.exception.ResourceNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -206,6 +208,7 @@ public class ProductServiceImpl
     }
 
     @Override
+    @Transactional
     public ProductResponse increaseStock(
             Long productId,
             Integer quantity
@@ -213,7 +216,7 @@ public class ProductServiceImpl
 
         Product product =
                 productRepository
-                        .findById(productId)
+                        .findByIdForUpdate(productId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Product not found"
@@ -232,6 +235,7 @@ public class ProductServiceImpl
     }
 
     @Override
+    @Transactional
     public ProductResponse decreaseStock(
             Long productId,
             Integer quantity
@@ -239,7 +243,7 @@ public class ProductServiceImpl
 
         Product product =
                 productRepository
-                        .findById(productId)
+                        .findByIdForUpdate(productId)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Product not found"
@@ -248,8 +252,8 @@ public class ProductServiceImpl
 
         if (product.getStock() < quantity) {
 
-            throw new RuntimeException(
-                    "Insufficient stock"
+            throw new InsufficientStockException(
+                    "Insufficient stock for " + product.getName()
             );
         }
 
@@ -264,6 +268,11 @@ public class ProductServiceImpl
                 .toResponse(updatedProduct);
     }
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id", "name", "sellingPrice", "mrp", "stock",
+            "brand", "createdAt", "updatedAt"
+    );
+
     @Override
     public Page<ProductResponse> getProducts(
             String keyword,
@@ -272,11 +281,16 @@ public class ProductServiceImpl
             String sortBy
     ) {
 
+        String sortField =
+                ALLOWED_SORT_FIELDS.contains(sortBy)
+                        ? sortBy
+                        : "name";
+
         Pageable pageable =
                 PageRequest.of(
                         page,
                         size,
-                        Sort.by(sortBy)
+                        Sort.by(sortField)
                 );
 
         Page<Product> products;
