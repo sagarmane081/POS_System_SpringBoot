@@ -6,10 +6,10 @@ import com.pos.auth.dto.RefreshTokenRequest;
 import com.pos.auth.dto.RegisterRequest;
 import com.pos.auth.security.JwtProvider;
 import com.pos.auth.service.AuthService;
+import com.pos.auth.service.RefreshTokenService;
 import com.pos.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +20,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
@@ -56,41 +57,22 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<?>>
+    public ResponseEntity<ApiResponse<AuthResponse>>
     refresh(
 
             @RequestBody
             RefreshTokenRequest request
     ) {
 
-        String refreshToken = request.getRefreshToken();
-
-        if (refreshToken == null
-                || !jwtProvider.validateRefreshToken(refreshToken)) {
-
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(
-                            new ApiResponse<>(
-                                    false,
-                                    "Invalid or expired refresh token",
-                                    null
-                            )
-                    );
-        }
-
-        String email =
-
-                jwtProvider
-                        .extractUsername(
-                                refreshToken
-                        );
+        RefreshTokenService.RotationResult rotation =
+                refreshTokenService.rotate(
+                        request.getRefreshToken()
+                );
 
         String token =
-
-                jwtProvider
-                        .generateToken(
-                                email
-                        );
+                jwtProvider.generateToken(
+                        rotation.user().getEmail()
+                );
 
         return ResponseEntity.ok(
 
@@ -104,8 +86,27 @@ public class AuthController {
 
                                 token,
 
-                                refreshToken
+                                rotation.refreshToken()
                         )
+                )
+        );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<?>>
+    logout(
+
+            @RequestBody
+            RefreshTokenRequest request
+    ) {
+
+        refreshTokenService.revoke(request.getRefreshToken());
+
+        return ResponseEntity.ok(
+                new ApiResponse<>(
+                        true,
+                        "Logged out successfully",
+                        null
                 )
         );
     }

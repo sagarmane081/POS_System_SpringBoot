@@ -44,16 +44,6 @@ class JwtProviderTest {
         String token = jwtProvider.generateToken("john@example.com");
 
         assertThat(jwtProvider.validateToken(token)).isTrue();
-        assertThat(jwtProvider.validateRefreshToken(token)).isFalse();
-    }
-
-    @Test
-    void validateRefreshToken_shouldReturnTrue_forRefreshToken() {
-
-        String refreshToken = jwtProvider.generateRefreshToken("john@example.com");
-
-        assertThat(jwtProvider.validateRefreshToken(refreshToken)).isTrue();
-        assertThat(jwtProvider.validateToken(refreshToken)).isFalse();
     }
 
     @Test

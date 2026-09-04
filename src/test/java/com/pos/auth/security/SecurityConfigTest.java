@@ -25,6 +25,7 @@ import com.pos.auth.controller.AuthController;
 import com.pos.auth.controller.UserController;
 import com.pos.auth.dto.CreateUserRequest;
 import com.pos.auth.enums.Role;
+import com.pos.auth.service.RefreshTokenService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,9 @@ class SecurityConfigTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private RefreshTokenService refreshTokenService;
 
     @MockBean
     private CategoryService categoryService;

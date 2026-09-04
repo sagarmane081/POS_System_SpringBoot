@@ -22,8 +22,6 @@ public class JwtProvider {
 
     private static final String TYPE_CLAIM = "type";
     private static final String TYPE_ACCESS = "access";
-    private static final String TYPE_REFRESH = "refresh";
-    private static final long REFRESH_EXPIRATION_MS = 604800000;
 
     private Key getSignKey() {
 
@@ -52,38 +50,6 @@ public class JwtProvider {
                         new Date(
                                 System.currentTimeMillis()
                                         + jwtExpiration
-                        )
-                )
-
-                .signWith(
-                        getSignKey(),
-                        SignatureAlgorithm.HS256
-                )
-
-                .compact();
-    }
-
-
-    public String generateRefreshToken(
-            String email
-    ) {
-
-        return Jwts.builder()
-
-                .setSubject(email)
-
-                .claim(TYPE_CLAIM, TYPE_REFRESH)
-
-                .setIssuedAt(
-                        new Date()
-                )
-
-                .setExpiration(
-
-                        new Date(
-
-                                System.currentTimeMillis()
-                                        + REFRESH_EXPIRATION_MS
                         )
                 )
 
@@ -132,23 +98,6 @@ public class JwtProvider {
             String token
     ) {
 
-        return isTokenOfType(token, TYPE_ACCESS);
-    }
-
-
-    public boolean validateRefreshToken(
-            String token
-    ) {
-
-        return isTokenOfType(token, TYPE_REFRESH);
-    }
-
-
-    private boolean isTokenOfType(
-            String token,
-            String expectedType
-    ) {
-
         try {
 
             Claims claims =
@@ -166,7 +115,7 @@ public class JwtProvider {
 
                             .getBody();
 
-            return expectedType.equals(
+            return TYPE_ACCESS.equals(
                     claims.get(TYPE_CLAIM, String.class)
             );
 

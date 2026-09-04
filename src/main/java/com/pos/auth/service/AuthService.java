@@ -30,6 +30,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse register(
             RegisterRequest request
@@ -58,17 +59,15 @@ public class AuthService {
                 .role(Role.ROLE_USER)
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
         String token =
                 jwtProvider.generateToken(
-                        user.getEmail()
+                        savedUser.getEmail()
                 );
 
         String refreshToken =
-                jwtProvider.generateRefreshToken(
-                        user.getEmail()
-                );
+                refreshTokenService.issue(savedUser);
 
         return new AuthResponse(
                 token,
@@ -111,9 +110,7 @@ public class AuthService {
                 );
 
         String refreshToken =
-                jwtProvider.generateRefreshToken(
-                        user.getEmail()
-                );
+                refreshTokenService.issue(user);
 
         return new AuthResponse(
                 token,

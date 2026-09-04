@@ -46,6 +46,9 @@ class AuthServiceTest {
     @Mock
     private AuthenticationManager authenticationManager;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -76,8 +79,9 @@ class AuthServiceTest {
 
         when(userRepository.existsByEmailIgnoreCase("john@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+        when(refreshTokenService.issue(any(User.class))).thenReturn("refresh-token");
 
         AuthResponse response = authService.register(request);
 
@@ -104,8 +108,9 @@ class AuthServiceTest {
 
         when(userRepository.existsByEmailIgnoreCase("john@example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+        when(refreshTokenService.issue(any(User.class))).thenReturn("refresh-token");
 
         authService.register(request);
 
@@ -133,7 +138,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmailIgnoreCase("john@example.com")).thenReturn(Optional.of(user));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+        when(refreshTokenService.issue(user)).thenReturn("refresh-token");
 
         AuthResponse response = authService.login(request);
 
@@ -192,7 +197,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmailIgnoreCase("john@example.com")).thenReturn(Optional.of(user));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("access-token");
-        when(jwtProvider.generateRefreshToken("john@example.com")).thenReturn("refresh-token");
+        when(refreshTokenService.issue(user)).thenReturn("refresh-token");
 
         authService.login(request);
 

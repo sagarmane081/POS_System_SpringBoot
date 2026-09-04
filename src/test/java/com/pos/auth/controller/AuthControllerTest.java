@@ -5,10 +5,13 @@ import com.pos.auth.dto.AuthResponse;
 import com.pos.auth.dto.LoginRequest;
 import com.pos.auth.dto.RefreshTokenRequest;
 import com.pos.auth.dto.RegisterRequest;
+import com.pos.auth.entity.User;
 import com.pos.auth.security.CustomUserDetailsService;
 import com.pos.auth.security.JwtProvider;
 import com.pos.auth.service.AuthService;
+import com.pos.auth.service.RefreshTokenService;
 import com.pos.common.exception.DuplicateResourceException;
+import com.pos.common.exception.InvalidRefreshTokenException;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -40,6 +45,9 @@ class AuthControllerTest {
 
     @MockBean
     private JwtProvider jwtProvider;
+
+    @MockBean
+    private RefreshTokenService refreshTokenService;
 
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
@@ -128,13 +136,15 @@ class AuthControllerTest {
     }
 
     @Test
-    void refresh_shouldReturnNewAccessToken_whenRefreshTokenValid() throws Exception {
+    void refresh_shouldReturnNewAccessTokenAndRotatedRefreshToken_whenRefreshTokenValid() throws Exception {
 
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("valid-refresh-token");
 
-        when(jwtProvider.validateRefreshToken("valid-refresh-token")).thenReturn(true);
-        when(jwtProvider.extractUsername("valid-refresh-token")).thenReturn("john@example.com");
+        User user = User.builder().id(1L).email("john@example.com").build();
+
+        when(refreshTokenService.rotate("valid-refresh-token"))
+                .thenReturn(new RefreshTokenService.RotationResult(user, "new-refresh-token"));
         when(jwtProvider.generateToken("john@example.com")).thenReturn("new-access-token");
 
         mockMvc.perform(post("/api/auth/refresh")
@@ -142,7 +152,7 @@ class AuthControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.token").value("new-access-token"))
-                .andExpect(jsonPath("$.data.refreshToken").value("valid-refresh-token"));
+                .andExpect(jsonPath("$.data.refreshToken").value("new-refresh-token"));
     }
 
     @Test
@@ -151,7 +161,8 @@ class AuthControllerTest {
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("bad-token");
 
-        when(jwtProvider.validateRefreshToken("bad-token")).thenReturn(false);
+        when(refreshTokenService.rotate("bad-token"))
+                .thenThrow(new InvalidRefreshTokenException("Invalid or expired refresh token"));
 
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
@@ -159,7 +170,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Invalid or expired refresh token"));
 
-        verify(jwtProvider, org.mockito.Mockito.never()).generateToken(any());
+        verify(jwtProvider, never()).generateToken(any());
     }
 
     @Test
@@ -167,9 +178,27 @@ class AuthControllerTest {
 
         RefreshTokenRequest request = new RefreshTokenRequest();
 
+        when(refreshTokenService.rotate(isNull()))
+                .thenThrow(new InvalidRefreshTokenException("Invalid or expired refresh token"));
+
         mockMvc.perform(post("/api/auth/refresh")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logout_shouldReturn200_andRevokeTheGivenRefreshToken() throws Exception {
+
+        RefreshTokenRequest request = new RefreshTokenRequest();
+        request.setRefreshToken("some-refresh-token");
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        verify(refreshTokenService).revoke("some-refresh-token");
     }
 }
