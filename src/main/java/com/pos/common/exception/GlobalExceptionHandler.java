@@ -112,6 +112,48 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(PaymentGatewayException.class)
+    public ResponseEntity<ApiResponse<Void>>
+    handlePaymentGatewayException(
+            PaymentGatewayException ex
+    ) {
+
+        log.error("Payment gateway call failed", ex);
+
+        return ResponseEntity.status(
+                HttpStatus.BAD_GATEWAY
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        "The payment gateway could not process this request. Please try again shortly.",
+                        null
+                )
+        );
+    }
+
+    @ExceptionHandler(InvalidWebhookSignatureException.class)
+    public ResponseEntity<ApiResponse<Void>>
+    handleInvalidWebhookSignature(
+            InvalidWebhookSignatureException ex
+    ) {
+
+        log.warn("Rejected webhook with invalid signature: {}", ex.getMessage());
+
+        return ResponseEntity.status(
+                HttpStatus.BAD_REQUEST
+        ).body(
+
+                new ApiResponse<>(
+
+                        false,
+                        ex.getMessage(),
+                        null
+                )
+        );
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>>
     handleAuthenticationException(

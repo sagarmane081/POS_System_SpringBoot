@@ -37,4 +37,34 @@ public class PaymentController {
                 )
         );
     }
+
+    @PostMapping("/webhooks/stripe")
+    public ResponseEntity<Void> stripeWebhook(
+
+            @RequestBody
+            String payload,
+
+            @RequestHeader("Stripe-Signature")
+            String signature
+    ) {
+
+        paymentService.handleStripeWebhook(payload, signature);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/webhooks/razorpay")
+    public ResponseEntity<Void> razorpayWebhook(
+
+            @RequestBody
+            String payload,
+
+            @RequestHeader("X-Razorpay-Signature")
+            String signature
+    ) {
+
+        paymentService.handleRazorpayWebhook(payload, signature);
+
+        return ResponseEntity.ok().build();
+    }
 }

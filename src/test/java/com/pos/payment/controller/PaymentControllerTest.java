@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pos.auth.security.CustomUserDetailsService;
 import com.pos.auth.security.JwtProvider;
 import com.pos.common.exception.DuplicateResourceException;
+import com.pos.common.exception.InvalidWebhookSignatureException;
 import com.pos.common.exception.ResourceNotFoundException;
 import com.pos.payment.dto.PaymentRequest;
 import com.pos.payment.dto.PaymentResponse;
@@ -19,6 +20,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -100,5 +103,61 @@ class PaymentControllerTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void stripeWebhook_shouldReturn200_andDelegateToService() throws Exception {
+
+        mockMvc.perform(post("/api/payments/webhooks/stripe")
+                        .header("Stripe-Signature", "sig123")
+                        .contentType("application/json")
+                        .content("{\"type\":\"payment_intent.succeeded\"}"))
+                .andExpect(status().isOk());
+
+        verify(paymentService).handleStripeWebhook(
+                "{\"type\":\"payment_intent.succeeded\"}", "sig123"
+        );
+    }
+
+    @Test
+    void stripeWebhook_shouldReturn400_whenSignatureInvalid() throws Exception {
+
+        doThrow(new InvalidWebhookSignatureException("Invalid Stripe webhook signature"))
+                .when(paymentService).handleStripeWebhook(any(), any());
+
+        mockMvc.perform(post("/api/payments/webhooks/stripe")
+                        .header("Stripe-Signature", "bad-sig")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid Stripe webhook signature"));
+    }
+
+    @Test
+    void razorpayWebhook_shouldReturn200_andDelegateToService() throws Exception {
+
+        mockMvc.perform(post("/api/payments/webhooks/razorpay")
+                        .header("X-Razorpay-Signature", "sig456")
+                        .contentType("application/json")
+                        .content("{\"event\":\"payment.captured\"}"))
+                .andExpect(status().isOk());
+
+        verify(paymentService).handleRazorpayWebhook(
+                "{\"event\":\"payment.captured\"}", "sig456"
+        );
+    }
+
+    @Test
+    void razorpayWebhook_shouldReturn400_whenSignatureInvalid() throws Exception {
+
+        doThrow(new InvalidWebhookSignatureException("Invalid Razorpay webhook signature"))
+                .when(paymentService).handleRazorpayWebhook(any(), any());
+
+        mockMvc.perform(post("/api/payments/webhooks/razorpay")
+                        .header("X-Razorpay-Signature", "bad-sig")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid Razorpay webhook signature"));
     }
 }

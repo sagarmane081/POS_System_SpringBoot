@@ -35,3 +35,18 @@ rate-limit:
   auth:
     max-requests: ${RATE_LIMIT_AUTH_MAX_REQUESTS:5}
     window-seconds: ${RATE_LIMIT_AUTH_WINDOW_SECONDS:60}
+
+# CARD payments (Stripe). Blank secret-key/webhook-secret is fine for local
+# dev/tests where no real payment ever happens; set real sandbox/live keys
+# via env vars to actually create/confirm PaymentIntents.
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  currency: ${STRIPE_CURRENCY:usd}
+
+# UPI payments (Razorpay). Same as above - blank keys are fine until you're
+# ready to test against a real Razorpay sandbox account.
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:}
+  key-secret: ${RAZORPAY_KEY_SECRET:}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}

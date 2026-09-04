@@ -157,7 +157,7 @@ class PosFlowIntegrationTest {
 
         PaymentRequest paymentRequest = PaymentRequest.builder()
                 .orderId(orderId)
-                .method(PaymentMethod.CARD)
+                .method(PaymentMethod.CASH)
                 .build();
 
         mockMvc.perform(post("/api/payments")

@@ -284,6 +284,26 @@ class SecurityConfigTest {
     }
 
     @Test
+    void stripeWebhook_shouldBeAccessible_withoutAuthentication() throws Exception {
+
+        mockMvc.perform(post("/api/payments/webhooks/stripe")
+                        .header("Stripe-Signature", "sig")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void razorpayWebhook_shouldBeAccessible_withoutAuthentication() throws Exception {
+
+        mockMvc.perform(post("/api/payments/webhooks/razorpay")
+                        .header("X-Razorpay-Signature", "sig")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     void getCategories_shouldBeAllowed_forAdmin() throws Exception {
 

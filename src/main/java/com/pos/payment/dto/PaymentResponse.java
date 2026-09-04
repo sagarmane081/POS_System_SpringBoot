@@ -26,4 +26,10 @@ public class PaymentResponse {
     private String transactionId;
 
     private LocalDateTime paidAt;
+
+    /**
+     * Set only for CARD payments: the Stripe client secret the caller needs
+     * to complete confirmation. Null for CASH/UPI.
+     */
+    private String clientSecret;
 }

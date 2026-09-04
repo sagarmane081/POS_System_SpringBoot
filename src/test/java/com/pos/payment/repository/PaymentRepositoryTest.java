@@ -71,4 +71,32 @@ class PaymentRepositoryTest {
 
         assertThat(paymentRepository.existsByOrderId(999L)).isFalse();
     }
+
+    @Test
+    void findByTransactionId_shouldReturnPayment_whenExists() {
+
+        Order order = persistOrder(BigDecimal.valueOf(100));
+
+        Payment payment = Payment.builder()
+                .order(order)
+                .amount(order.getTotalAmount())
+                .method(PaymentMethod.UPI)
+                .status(PaymentStatus.PENDING)
+                .transactionId("order_gateway_123")
+                .build();
+
+        paymentRepository.save(payment);
+
+        assertThat(paymentRepository.findByTransactionId("order_gateway_123"))
+                .isPresent()
+                .get()
+                .extracting(Payment::getStatus)
+                .isEqualTo(PaymentStatus.PENDING);
+    }
+
+    @Test
+    void findByTransactionId_shouldReturnEmpty_whenMissing() {
+
+        assertThat(paymentRepository.findByTransactionId("unknown")).isEmpty();
+    }
 }
